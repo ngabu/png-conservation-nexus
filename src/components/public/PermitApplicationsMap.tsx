@@ -114,15 +114,6 @@ export function PermitApplicationsMap({ onPermitClick }: PermitApplicationsMapPr
         </svg>
       `;
       el.style.cursor = 'pointer';
-      el.style.transition = 'transform 0.2s';
-
-      // Add hover effect
-      el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.15)';
-      });
-      el.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1)';
-      });
 
       // Create popup content
       const popupContent = `
