@@ -1650,6 +1650,7 @@ export type Database = {
           field_type: string
           help_text: string | null
           id: string
+          is_active: boolean
           is_mandatory: boolean | null
           permit_type_id: string
           placeholder: string | null
@@ -1665,6 +1666,7 @@ export type Database = {
           field_type: string
           help_text?: string | null
           id?: string
+          is_active?: boolean
           is_mandatory?: boolean | null
           permit_type_id: string
           placeholder?: string | null
@@ -1680,6 +1682,7 @@ export type Database = {
           field_type?: string
           help_text?: string | null
           id?: string
+          is_active?: boolean
           is_mandatory?: boolean | null
           permit_type_id?: string
           placeholder?: string | null

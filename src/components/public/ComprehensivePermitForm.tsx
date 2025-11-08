@@ -76,7 +76,6 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
     entity_type: '', // Add this field for document requirements
     entity_id: '', // Add entity_id field
     entity_name: '', // Add entity_name field
-    permit_type_specific: '',
     permit_category: '', // Add permit category for PermitSpecificFieldsStep
     permit_type_id: '', // Add permit type ID for PermitSpecificFieldsStep
     // PNG Environment Act 2000 fields - Public Consultation
@@ -86,15 +85,8 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
     // PNG Environment Act 2000 fields - Fees
     fee_amount: 0,
     fee_breakdown: null,
-    // PNG Environment Act 2000 fields - Permit Specific Fields
-    ods_quota_allocation: '',
-    waste_contaminant_details: {},
-    water_extraction_details: {},
-    ods_details: {},
-    operational_details: '',
-    operational_capacity: '',
-    operating_hours: '',
-    permit_specific_fields: {}, // Add dynamic permit-specific fields storage
+    // PNG Environment Act 2000 fields - Dynamic Permit-Specific Fields (replaces legacy columns)
+    permit_specific_fields: {}, // All dynamic permit-specific fields stored here
     // PNG Environment Act 2000 fields - Requirements & Legal
     eia_required: false,
     eis_required: false,
@@ -162,7 +154,6 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
               entity_type: data.entity_type || '', // Add entity_type mapping
               entity_id: data.entity_id || '', // Add entity_id mapping
               entity_name: data.entity_name || '', // Add entity_name mapping
-              permit_type_specific: data.permit_type_specific || '',
               permit_category: data.permit_category || '', // Add permit_category
               permit_type_id: data.permit_type_id || '', // Add permit_type_id
               public_consultation_proof: Array.isArray(data.public_consultation_proof) ? data.public_consultation_proof : [],
@@ -170,13 +161,6 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
               consultation_period_end: data.consultation_period_end || '',
               fee_amount: data.fee_amount || 0,
               fee_breakdown: data.fee_breakdown,
-              ods_quota_allocation: data.ods_quota_allocation || '',
-              waste_contaminant_details: (typeof data.waste_contaminant_details === 'object') ? data.waste_contaminant_details : {},
-              water_extraction_details: (typeof data.water_extraction_details === 'object') ? data.water_extraction_details : {},
-              ods_details: (typeof data.ods_details === 'object') ? data.ods_details : {},
-              operational_details: data.operational_details || '',
-              operational_capacity: data.operational_capacity || '',
-              operating_hours: data.operating_hours || '',
               permit_specific_fields: (typeof data.permit_specific_fields === 'object' && data.permit_specific_fields) ? data.permit_specific_fields : {},
               eia_required: data.eia_required || false,
               eis_required: data.eis_required || false,
@@ -289,7 +273,7 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
       
       const applicationData = {
         title: formData.applicationTitle,
-        permit_type: formData.permit_type_specific || formData.prescribedActivity || 'General Permit',
+        permit_type: formData.prescribedActivity || 'General Permit',
         description: formData.projectDescription,
         status: isDraft ? 'draft' : 'submitted',
         user_id: user.id,
@@ -319,7 +303,6 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
         activity_category: formData.activity_category || null,
         activity_subcategory: formData.activity_subcategory || null,
         activity_classification: formData.activity_description || null,
-        permit_type_specific: formData.permit_type_specific || null,
         permit_category: formData.permit_category || null, // Save permit_category
         permit_type_id: formData.permit_type_id || null, // Save permit_type_id
         eia_required: formData.eia_required,
@@ -328,17 +311,6 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
         public_consultation_proof: formData.public_consultation_proof,
         consultation_period_start: formData.consultation_period_start || null,
         consultation_period_end: formData.consultation_period_end || null,
-        // PNG Environment Act 2000 fields - Fees
-        fee_amount: formData.calculatedFees?.totalFee || 0,
-        fee_breakdown: formData.calculatedFees,
-        // PNG Environment Act 2000 fields - Permit Specific
-        ods_quota_allocation: formData.ods_quota_allocation,
-        waste_contaminant_details: formData.waste_contaminant_details,
-        water_extraction_details: formData.water_extraction_details,
-        ods_details: formData.ods_details,
-        operational_details: formData.operational_details,
-        operational_capacity: formData.operational_capacity,
-        operating_hours: formData.operating_hours,
         permit_specific_fields: formData.permit_specific_fields,
         // PNG Environment Act 2000 fields - Legal Compliance
         legal_declaration_accepted: formData.legal_declaration_accepted,

@@ -48,11 +48,12 @@ export const usePermitTypeFields = (permitTypeName?: string) => {
           return;
         }
 
-        // Then fetch the fields for this permit type
+        // Then fetch the active fields for this permit type
         const { data: fieldsData, error: fieldsError } = await supabase
           .from('permit_type_fields')
           .select('*')
           .eq('permit_type_id', permitTypeData.id)
+          .eq('is_active', true)
           .order('sort_order', { ascending: true });
 
         if (fieldsError) throw fieldsError;
