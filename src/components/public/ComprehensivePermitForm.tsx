@@ -218,25 +218,31 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
 
   const [activeTab, setActiveTab] = useState('project');
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string | Record<string, any>, value?: any) => {
     console.log('🔄 ComprehensivePermitForm - handleInputChange:', { field, value, currentFormData: formData });
     
-    // Special logging for permit_specific_fields
-    if (field === 'permit_specific_fields') {
-      console.log('📝 PERMIT SPECIFIC FIELDS UPDATE:', value);
-    }
-    
     setFormData(prev => {
+      // Handle object with multiple fields (from steps that update multiple fields at once)
+      if (typeof field === 'object' && field !== null) {
+        console.log('📦 Multiple fields update:', field);
+        return {
+          ...prev,
+          ...field
+        };
+      }
+      
+      // Handle single field update
+      const fieldName = field as string;
+      if (fieldName === 'permit_specific_fields') {
+        console.log('📝 PERMIT SPECIFIC FIELDS UPDATE:', value);
+      }
+      
       const newFormData = {
         ...prev,
-        [field]: value
+        [fieldName]: value
       };
-      console.log('🔄 ComprehensivePermitForm - Updated formData:', newFormData);
       
-      // Log permit_specific_fields state after update
-      if (field === 'permit_specific_fields') {
-        console.log('📝 PERMIT SPECIFIC FIELDS IN STATE:', newFormData.permit_specific_fields);
-      }
+      console.log('🔄 ComprehensivePermitForm - Updated formData:', newFormData);
       
       return newFormData;
     });
