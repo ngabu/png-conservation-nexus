@@ -52,6 +52,15 @@ const publicNavigationItems: PublicNavigationItem[] = [
   { title: "Dashboard", value: "dashboard", icon: LayoutDashboard },
   { title: "Entities", value: "entities", icon: Building2 },
   { 
+    title: "Intent Registration", 
+    value: "intent-registration", 
+    icon: FilePlus,
+    subItems: [
+      { title: "New Intent", value: "intent-registration-new", icon: FilePlus },
+      { title: "Existing Intents", value: "intent-registration-existing", icon: List },
+    ]
+  },
+  { 
     title: "Permits Management", 
     value: "permits", 
     icon: FileText,
@@ -222,7 +231,7 @@ export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
                 <SidebarMenuButton asChild>
                   <button
                     onClick={handleSignOut}
-                    className="w-full hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 text-destructive hover:bg-destructive/10"
+                    className="w-full hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 text-amber-600 hover:bg-amber-500/10"
                   >
                     <LogOut className="w-5 h-5 shrink-0" />
                     {!isCollapsed && <span className="ml-3 flex-1 text-left">Sign Out</span>}

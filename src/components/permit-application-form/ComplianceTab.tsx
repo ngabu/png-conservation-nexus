@@ -3,14 +3,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { FileText, CheckCircle, AlertCircle, Activity, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, CheckCircle, AlertCircle, Activity, Clock, Download, Upload, Settings } from 'lucide-react';
+import { usePermitTypeFields } from '@/hooks/usePermitTypeFields';
+import { useDocumentRequirements } from '@/hooks/useDocumentRequirements';
 
 interface ComplianceTabProps {
   formData: any;
   handleComplianceChange: (field: string, checked: boolean) => void;
+  handleInputChange?: (field: string, value: any) => void;
+  onNavigateToTab?: (tab: string) => void;
 }
 
-const ComplianceTab: React.FC<ComplianceTabProps> = ({ formData, handleComplianceChange }) => {
+const ComplianceTab: React.FC<ComplianceTabProps> = ({ formData, handleComplianceChange, handleInputChange, onNavigateToTab }) => {
+  // Fetch dynamic permit type fields for assessments
+  const { fields: permitTypeFields, loading: fieldsLoading } = usePermitTypeFields(formData.permit_type_specific);
+  
+  // Fetch document requirements based on activity level and entity type
+  const { 
+    requirements: documentRequirements, 
+    uploadStatuses,
+    loading: docsLoading,
+    updateUploadStatus 
+  } = useDocumentRequirements(
+    formData.entity_type,
+    formData.activity_level,
+    formData.prescribed_activity_id
+  );
+
   const complianceItems = [
     {
       id: 'environmentalAssessment',
@@ -100,8 +122,360 @@ const ComplianceTab: React.FC<ComplianceTabProps> = ({ formData, handleComplianc
     return activityLevel ? getPermitTypeFromLevel(activityLevel) : null;
   }, [activityLevel]);
 
+  const handleFieldChange = (fieldName: string, value: any) => {
+    if (handleInputChange) {
+      handleInputChange(`assessment_${fieldName}`, value);
+    }
+  };
+
+  const renderDynamicField = (field: any) => {
+    const fieldValue = formData[`assessment_${field.field_name}`] || '';
+
+    switch (field.field_type) {
+      case 'text':
+      case 'number':
+      case 'email':
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.field_name}>
+              {field.field_label}
+              {field.is_mandatory && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <Input
+              id={field.field_name}
+              type={field.field_type}
+              value={fieldValue}
+              onChange={(e) => handleFieldChange(field.field_name, e.target.value)}
+              placeholder={field.placeholder || ''}
+              required={field.is_mandatory}
+            />
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      case 'textarea':
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.field_name}>
+              {field.field_label}
+              {field.is_mandatory && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <Textarea
+              id={field.field_name}
+              value={fieldValue}
+              onChange={(e) => handleFieldChange(field.field_name, e.target.value)}
+              placeholder={field.placeholder || ''}
+              required={field.is_mandatory}
+              rows={4}
+            />
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      case 'select':
+      case 'dropdown':
+        const options = field.field_options?.options || [];
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.field_name}>
+              {field.field_label}
+              {field.is_mandatory && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            <Select
+              value={fieldValue}
+              onValueChange={(value) => handleFieldChange(field.field_name, value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={field.placeholder || 'Select an option'} />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((option: string) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {field.help_text && (
+              <p className="text-sm text-muted-foreground">{field.help_text}</p>
+            )}
+          </div>
+        );
+
+      case 'checkbox':
+        return (
+          <div key={field.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+            <Checkbox
+              id={field.field_name}
+              checked={!!fieldValue}
+              onCheckedChange={(checked) => handleFieldChange(field.field_name, checked)}
+            />
+            <div className="flex-1">
+              <Label htmlFor={field.field_name} className="cursor-pointer font-medium">
+                {field.field_label}
+                {field.is_mandatory && <span className="text-destructive ml-1">*</span>}
+              </Label>
+              {field.help_text && (
+                <p className="text-sm text-muted-foreground mt-1">{field.help_text}</p>
+              )}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // Check prerequisites completion
+  const hasEntity = !!formData.entity_type;
+  const hasPermitType = !!formData.permit_category && !!formData.permit_type_specific;
+  const hasActivityLevel = !!formData.activity_level;
+  const allPrerequisitesMet = hasEntity && hasPermitType && hasActivityLevel;
+
   return (
     <div className="space-y-6">
+      {/* Prerequisite Summary Card */}
+      {allPrerequisitesMet && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CheckCircle className="w-5 h-5 text-primary" />
+              Prerequisites Complete
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">Entity Type</p>
+                <Badge variant="secondary" className="text-sm">
+                  {formData.entity_type?.toUpperCase()}
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">Permit Information</p>
+                <div className="flex flex-col gap-1">
+                  <Badge variant="secondary" className="text-sm w-fit">
+                    {formData.permit_category}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{formData.permit_type_specific}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">Activity Classification</p>
+                <Badge variant="secondary" className="text-sm">
+                  {formData.activity_level}
+                </Badge>
+                {formData.activity_description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                    {formData.activity_description}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Prerequisite Check Messages with Navigation */}
+      {!hasEntity && (
+        <Card className="border-amber-500 bg-amber-50/50">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-amber-800">Entity Selection Required</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Please select an entity in the Project tab before viewing compliance requirements.
+                  </p>
+                </div>
+              </div>
+              {onNavigateToTab && (
+                <button
+                  onClick={() => onNavigateToTab('project')}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Go to Project
+                </button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {!hasPermitType && (
+        <Card className="border-amber-500 bg-amber-50/50">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-amber-800">Permit Type Selection Required</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Please select a permit category and type in the Permit Details tab to view assessment fields.
+                  </p>
+                </div>
+              </div>
+              {onNavigateToTab && (
+                <button
+                  onClick={() => onNavigateToTab('permitspecific')}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Go to Permit Details
+                </button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {!hasActivityLevel && (
+        <Card className="border-amber-500 bg-amber-50/50">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-amber-800">Activity Classification Required</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Please complete the Classification tab to view document requirements.
+                  </p>
+                </div>
+              </div>
+              {onNavigateToTab && (
+                <button
+                  onClick={() => onNavigateToTab('classification')}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Go to Classification
+                </button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dynamic Assessment Fields based on Permit Type */}
+      {formData.permit_category && formData.permit_type_specific && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-primary" />
+              Permit Assessment Fields
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Category: <span className="font-medium">{formData.permit_category}</span> | 
+              Type: <span className="font-medium">{formData.permit_type_specific}</span>
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {fieldsLoading ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Loading assessment fields...
+              </div>
+            ) : permitTypeFields.length > 0 ? (
+              <div className="space-y-4">
+                {permitTypeFields.map(field => renderDynamicField(field))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                No specific assessment fields configured for this permit type.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Document Requirements Checklist based on Activity Level */}
+      {formData.activity_level && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-primary" />
+              Required Documents
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Based on Activity Level: <Badge variant="outline">{formData.activity_level}</Badge>
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {docsLoading ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Loading document requirements...
+              </div>
+            ) : documentRequirements.length > 0 ? (
+              <div className="space-y-3">
+                {documentRequirements.map((doc) => {
+                  const uploadStatus = uploadStatuses.find(s => s.requirement_id === doc.id);
+                  return (
+                    <div key={doc.id} className="flex items-start space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        id={`doc-${doc.id}`}
+                        checked={uploadStatus?.uploaded || false}
+                        onCheckedChange={(checked) => updateUploadStatus(doc.id, checked as boolean)}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Label 
+                            htmlFor={`doc-${doc.id}`} 
+                            className="font-medium cursor-pointer"
+                          >
+                            {doc.name}
+                          </Label>
+                          {doc.is_mandatory && (
+                            <Badge variant="destructive" className="text-xs">Required</Badge>
+                          )}
+                          {doc.template_path && (
+                            <button className="text-xs text-primary flex items-center gap-1 hover:underline">
+                              <Download className="w-3 h-3" />
+                              Template
+                            </button>
+                          )}
+                        </div>
+                        {doc.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {doc.description}
+                          </p>
+                        )}
+                        {uploadStatus?.file_name && (
+                          <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Uploaded: {uploadStatus.file_name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                  <p className="text-sm">
+                    <span className="font-medium">
+                      {uploadStatuses.filter(s => s.uploaded).length} of {documentRequirements.length}
+                    </span>
+                    {' '}documents verified
+                    {documentRequirements.some(d => d.is_mandatory) && (
+                      <span className="text-muted-foreground ml-2">
+                        ({documentRequirements.filter(d => d.is_mandatory).length} required)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                No specific document requirements for this activity level.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Activity Level Assessment */}
       {formData.prescribedActivity && (
         <Card>

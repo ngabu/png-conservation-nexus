@@ -174,19 +174,11 @@ export default function Auth() {
   };
 
   useEffect(() => {
-    if (redirectReady && !authLoading && profile) {
+    if (!authLoading && profile && (redirectReady || true)) {
       const targetPath = getRedirectPath(profile);
       navigate(targetPath);
     }
   }, [redirectReady, authLoading, profile, navigate]);
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!authLoading && profile) {
-      const targetPath = getRedirectPath(profile);
-      navigate(targetPath);
-    }
-  }, [authLoading, profile, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-forest-50 to-nature-50 p-4">

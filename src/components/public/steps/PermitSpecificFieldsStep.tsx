@@ -179,8 +179,10 @@ export function PermitSpecificFieldsStep({ data, onChange }: PermitSpecificField
   };
 
   const handlePermitTypeChange = (permitTypeId: string) => {
+    const selectedType = permitTypes.find(pt => pt.id === permitTypeId);
     onChange({
       permit_type_id: permitTypeId,
+      permit_type_specific: selectedType?.name,
       permit_specific_fields: {}
     });
   };

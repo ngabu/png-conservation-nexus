@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { Settings, Bell, Shield, Palette, Globe } from 'lucide-react';
+import { BrowserNotificationSettings } from './BrowserNotificationSettings';
 
 export function AppSettings() {
   const { toast } = useToast();
@@ -56,12 +57,15 @@ export function AppSettings() {
         <p className="text-forest-600 mt-1">Configure your application preferences and security settings</p>
       </div>
 
-      {/* Notification Settings */}
+      {/* Browser Notifications */}
+      <BrowserNotificationSettings />
+
+      {/* Notification Preferences */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            Notification Preferences
+            In-App Notification Preferences
           </CardTitle>
           <CardDescription>
             Choose how you want to receive updates and notifications

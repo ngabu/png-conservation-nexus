@@ -64,11 +64,41 @@ export function PermitApplicationsMap({ onPermitClick }: PermitApplicationsMapPr
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        center: [143.95555, -6.314993], // PNG center
-        zoom: 6,
+        center: [147, -6], // PNG center
+        zoom: 5.2,
+        interactive: true,
+        dragPan: true,
+        scrollZoom: true,
+        boxZoom: true,
+        dragRotate: true,
+        keyboard: true,
+        doubleClickZoom: true,
+        touchZoomRotate: true,
+        touchPitch: true,
       });
 
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+      // Ensure all interaction handlers are enabled after map load
+      const enableInteractions = () => {
+        map.current?.dragPan.enable();
+        map.current?.scrollZoom.enable();
+        map.current?.boxZoom.enable();
+        map.current?.keyboard.enable();
+        map.current?.doubleClickZoom.enable();
+        map.current?.dragRotate.enable();
+        map.current?.touchZoomRotate.enable();
+      };
+      if (map.current.loaded()) {
+        enableInteractions();
+      } else {
+        map.current.on('load', enableInteractions);
+      }
+
+      // Debug any map interaction issues
+      map.current.on('error', (e) => {
+        console.error('Mapbox GL JS error:', e?.error || e);
+      });
     }
 
     // Clear existing markers
@@ -119,6 +149,9 @@ export function PermitApplicationsMap({ onPermitClick }: PermitApplicationsMapPr
       const popupContent = `
         <div style="padding: 8px; min-width: 200px;">
           <h4 style="font-weight: 600; margin-bottom: 8px; color: #1f2937;">${app.title || 'Untitled Project'}</h4>
+          <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
+            <strong>Status:</strong> ${statusLabel}
+          </p>
           ${app.entity?.name ? `
             <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
               <strong>Entity:</strong> ${app.entity.name}
@@ -126,7 +159,7 @@ export function PermitApplicationsMap({ onPermitClick }: PermitApplicationsMapPr
           ` : ''}
           ${app.details?.activity_location ? `
             <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
-              <strong>Address:</strong> ${app.details.activity_location}
+              <strong>Location:</strong> ${app.details.activity_location}
             </p>
           ` : ''}
           <p style="font-size: 11px; color: #9ca3af; margin-top: 6px; font-style: italic;">
@@ -138,13 +171,20 @@ export function PermitApplicationsMap({ onPermitClick }: PermitApplicationsMapPr
       const popup = new mapboxgl.Popup({
         offset: 25,
         closeButton: false,
-        className: 'permit-popup'
+        closeOnClick: false
       }).setHTML(popupContent);
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([lng, lat])
-        .setPopup(popup)
         .addTo(map.current!);
+
+      // Add hover effect with popup
+      el.addEventListener('mouseenter', () => {
+        popup.setLngLat([lng, lat]).addTo(map.current!);
+      });
+      el.addEventListener('mouseleave', () => {
+        popup.remove();
+      });
 
       // Add click handler
       el.addEventListener('click', () => {
@@ -155,20 +195,6 @@ export function PermitApplicationsMap({ onPermitClick }: PermitApplicationsMapPr
 
       markers.current.push(marker);
     });
-
-    // Fit map to show all markers if we have any
-    if (markers.current.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      markers.current.forEach(marker => {
-        const lngLat = marker.getLngLat();
-        bounds.extend([lngLat.lng, lngLat.lat]);
-      });
-      
-      map.current?.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 12
-      });
-    }
 
     return () => {
       // Don't remove the map on cleanup, just the markers
@@ -218,13 +244,14 @@ export function PermitApplicationsMap({ onPermitClick }: PermitApplicationsMapPr
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <div 
           ref={mapContainer} 
-          className="h-96 w-full rounded-lg border border-border overflow-hidden"
+          className="h-96 w-full rounded-lg border border-border overflow-hidden cursor-grab active:cursor-grabbing pointer-events-auto select-none"
+          style={{ touchAction: 'none' }}
         />
         {applications.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
             <div className="text-center text-muted-foreground">
               <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No permit applications to display</p>

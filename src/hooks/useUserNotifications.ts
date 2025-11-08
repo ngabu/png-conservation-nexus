@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchUserNotifications, UserNotification } from '@/services/userNotificationsService';
+import { browserNotifications } from '@/services/browserNotifications';
 
 interface UseUserNotificationsReturn {
   notifications: UserNotification[];
@@ -43,6 +44,8 @@ export const useUserNotifications = (
   useEffect(() => {
     if (!userId) return;
 
+    console.log('[Realtime] Setting up notification subscription for user:', userId);
+
     const channel = supabase
       .channel(`user-notifications-${userId}`)
       .on(
@@ -54,8 +57,19 @@ export const useUserNotifications = (
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
+          console.log('[Realtime] New notification received:', payload);
           const newNotification = payload.new as UserNotification;
           setNotifications(prev => [newNotification, ...prev]);
+          
+          // Show browser notification for important events
+          if (browserNotifications.isEnabled()) {
+            browserNotifications.showForNotification(
+              newNotification.type,
+              newNotification.title,
+              newNotification.message
+            );
+          }
+          
           onNotificationUpdate?.(newNotification);
         }
       )
@@ -68,6 +82,7 @@ export const useUserNotifications = (
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
+          console.log('[Realtime] Notification updated:', payload);
           const updatedNotification = payload.new as UserNotification;
           setNotifications(prev => 
             prev.map(notification => 
@@ -88,15 +103,26 @@ export const useUserNotifications = (
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
+          console.log('[Realtime] Notification deleted:', payload);
           const deletedNotification = payload.old as UserNotification;
           setNotifications(prev => 
             prev.filter(notification => notification.id !== deletedNotification.id)
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Realtime] Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Successfully subscribed to notifications');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[Realtime] Channel error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('[Realtime] Subscription timed out');
+        }
+      });
 
     return () => {
+      console.log('[Realtime] Cleaning up notification subscription');
       supabase.removeChannel(channel);
     };
   }, [userId, onNotificationUpdate]);

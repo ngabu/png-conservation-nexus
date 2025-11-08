@@ -466,6 +466,8 @@ export type Database = {
           file_size: number | null
           filename: string
           id: string
+          intent_registration_draft_id: string | null
+          intent_registration_id: string | null
           mime_type: string | null
           permit_id: string | null
           uploaded_at: string
@@ -479,6 +481,8 @@ export type Database = {
           file_size?: number | null
           filename: string
           id?: string
+          intent_registration_draft_id?: string | null
+          intent_registration_id?: string | null
           mime_type?: string | null
           permit_id?: string | null
           uploaded_at?: string
@@ -492,6 +496,8 @@ export type Database = {
           file_size?: number | null
           filename?: string
           id?: string
+          intent_registration_draft_id?: string | null
+          intent_registration_id?: string | null
           mime_type?: string | null
           permit_id?: string | null
           uploaded_at?: string
@@ -510,6 +516,20 @@ export type Database = {
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_intent_registration_draft_id_fkey"
+            columns: ["intent_registration_draft_id"]
+            isOneToOne: false
+            referencedRelation: "intent_registration_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_intent_registration_id_fkey"
+            columns: ["intent_registration_id"]
+            isOneToOne: false
+            referencedRelation: "intent_registrations"
             referencedColumns: ["id"]
           },
         ]
@@ -905,6 +925,118 @@ export type Database = {
             columns: ["permit_application_id"]
             isOneToOne: false
             referencedRelation: "permit_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intent_registration_drafts: {
+        Row: {
+          activity_description: string | null
+          activity_level: string | null
+          commencement_date: string | null
+          completion_date: string | null
+          created_at: string
+          draft_name: string | null
+          entity_id: string | null
+          id: string
+          preparatory_work_description: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_description?: string | null
+          activity_level?: string | null
+          commencement_date?: string | null
+          completion_date?: string | null
+          created_at?: string
+          draft_name?: string | null
+          entity_id?: string | null
+          id?: string
+          preparatory_work_description?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_description?: string | null
+          activity_level?: string | null
+          commencement_date?: string | null
+          completion_date?: string | null
+          created_at?: string
+          draft_name?: string | null
+          entity_id?: string | null
+          id?: string
+          preparatory_work_description?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_registration_drafts_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intent_registrations: {
+        Row: {
+          activity_description: string
+          activity_level: string
+          commencement_date: string
+          completion_date: string
+          created_at: string
+          entity_id: string
+          id: string
+          official_feedback_attachments: Json | null
+          preparatory_work_description: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_description: string
+          activity_level: string
+          commencement_date: string
+          completion_date: string
+          created_at?: string
+          entity_id: string
+          id?: string
+          official_feedback_attachments?: Json | null
+          preparatory_work_description: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_description?: string
+          activity_level?: string
+          commencement_date?: string
+          completion_date?: string
+          created_at?: string
+          entity_id?: string
+          id?: string
+          official_feedback_attachments?: Json | null
+          preparatory_work_description?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_registrations_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
             referencedColumns: ["id"]
           },
         ]
@@ -1857,6 +1989,29 @@ export type Database = {
         }[]
       }
       get_current_user_staff_unit: { Args: never; Returns: string }
+      get_intent_registrations_with_reviewer: {
+        Args: { requesting_user_id: string }
+        Returns: {
+          activity_description: string
+          activity_level: string
+          commencement_date: string
+          completion_date: string
+          created_at: string
+          entity_id: string
+          id: string
+          official_feedback_attachments: Json
+          preparatory_work_description: string
+          review_notes: string
+          reviewed_at: string
+          reviewed_by: string
+          reviewer_email: string
+          reviewer_first_name: string
+          reviewer_last_name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_prescribed_activities: { Args: never; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_super_admin: { Args: never; Returns: boolean }
