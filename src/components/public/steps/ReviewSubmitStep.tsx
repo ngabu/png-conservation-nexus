@@ -35,8 +35,8 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
       ]
     };
 
-    // Add public consultation requirements for Level 2B/3
-    if (['Level 2B', 'Level 3'].includes(data.activity_level)) {
+    // Add public consultation requirements for Level 2/3
+    if (['Level 2', 'Level 3'].includes(data.activity_level)) {
       mandatory['Public Consultation'] = [
         { field: 'consultation_period_start', label: 'Consultation Start Date', value: data.consultation_period_start },
         { field: 'consultation_period_end', label: 'Consultation End Date', value: data.consultation_period_end },

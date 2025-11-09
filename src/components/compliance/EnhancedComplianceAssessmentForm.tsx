@@ -1041,8 +1041,7 @@ export function EnhancedComplianceAssessmentForm({ assessmentId, onComplete }: E
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="1">Level 1</SelectItem>
-                            <SelectItem value="2A">Level 2A</SelectItem>
-                            <SelectItem value="2B">Level 2B</SelectItem>
+                            <SelectItem value="2">Level 2</SelectItem>
                             <SelectItem value="3">Level 3</SelectItem>
                           </SelectContent>
                         </Select>

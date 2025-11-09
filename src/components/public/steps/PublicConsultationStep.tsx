@@ -12,7 +12,7 @@ interface PublicConsultationStepProps {
 }
 
 export function PublicConsultationStep({ data, onChange }: PublicConsultationStepProps) {
-  const isRequired = ['Level 2B', 'Level 3'].includes(data.activity_level);
+  const isRequired = ['Level 2', 'Level 3'].includes(data.activity_level);
   
   if (!isRequired) {
     return (
@@ -152,7 +152,7 @@ export function PublicConsultationStep({ data, onChange }: PublicConsultationSte
               <h4 className="font-medium text-blue-800">Public Consultation Requirements</h4>
               <ul className="text-sm text-blue-700 mt-2 space-y-1">
                 <li>• Public notice must be published in national newspapers</li>
-                <li>• Consultation period: minimum 30 days for Level 2B, 60 days for Level 3</li>
+                <li>• Consultation period: minimum 30 days for Level 2, 60 days for Level 3</li>
                 <li>• Community meetings must be held in affected areas</li>
                 <li>• All public comments must be documented and addressed</li>
                 <li>• Minutes of public meetings must be submitted</li>

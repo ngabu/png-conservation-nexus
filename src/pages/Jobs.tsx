@@ -199,8 +199,7 @@ const Jobs = () => {
                             getLevelColor={(level: string) => {
                               const colors = {
                                 'Level 1': 'bg-green-100 text-green-800',
-                                'Level 2A': 'bg-yellow-100 text-yellow-800',
-                                'Level 2B': 'bg-orange-100 text-orange-800',
+                                'Level 2': 'bg-yellow-100 text-yellow-800',
                                 'Level 3': 'bg-red-100 text-red-800'
                               };
                               return colors[level] || 'bg-gray-100 text-gray-800';

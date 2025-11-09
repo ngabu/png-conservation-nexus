@@ -103,7 +103,7 @@ export const useFeeCalculation = () => {
           .select('id')
           .eq('category_type', params.activityType)
           .eq('sub_category', params.activitySubCategory || 'general')
-          .eq('level', params.activityLevel === 'Level 1' ? 1 : params.activityLevel === 'Level 2A' || params.activityLevel === 'Level 2B' ? 2 : 3)
+          .eq('level', params.activityLevel === 'Level 1' ? 1 : params.activityLevel === 'Level 2' ? 2 : 3)
           .limit(1);
 
         activityId = activityData?.[0]?.id;
@@ -360,7 +360,7 @@ export const useFeeCalculation = () => {
     return calculateFeesFallback(params);
   };
 
-  const getPermitTypes = () => ['Level 1', 'Level 2A', 'Level 2B', 'Level 3'];
+  const getPermitTypes = () => ['Level 1', 'Level 2', 'Level 3'];
   const getFeeCategories = () => ['Red Category', 'Orange Category', 'Green Category'];
   const getActivityTypes = () => ['new', 'amendment', 'transfer', 'amalgamation', 'compliance', 'enforcement', 'renewal', 'surrender'];
 

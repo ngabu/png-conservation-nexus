@@ -46,8 +46,7 @@ const ComplianceReports = () => {
 
   const complianceScoreData = [
     { category: "Level 1", avgScore: 92, target: 90 },
-    { category: "Level 2A", avgScore: 87, target: 85 },
-    { category: "Level 2B", avgScore: 85, target: 85 },
+    { category: "Level 2", avgScore: 86, target: 85 },
     { category: "Level 3", avgScore: 78, target: 80 },
   ];
 

@@ -79,8 +79,7 @@ export function EnhancedFeeCalculator({
 
   const activityLevels = [
     { value: 'Level 1', label: 'Level 1' },
-    { value: 'Level 2A', label: 'Level 2A' },
-    { value: 'Level 2B', label: 'Level 2B' },
+    { value: 'Level 2', label: 'Level 2' },
     { value: 'Level 3', label: 'Level 3' }
   ];
 

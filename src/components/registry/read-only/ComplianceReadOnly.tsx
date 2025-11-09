@@ -51,8 +51,7 @@ export function ComplianceReadOnly({ permit }: ComplianceReadOnlyProps) {
   const getActivityLevel = (permitType: string) => {
     const levelMap = {
       'Level 1': 'Level 1',
-      'Level 2A': 'Level 2A',
-      'Level 2B': 'Level 2B',
+      'Level 2': 'Level 2',
       'Level 3': 'Level 3'
     };
     return levelMap[permitType] || 'Level 1';
@@ -61,8 +60,7 @@ export function ComplianceReadOnly({ permit }: ComplianceReadOnlyProps) {
   const getLevelDescription = (level: string) => {
     const descriptions = {
       'Level 1': 'Simple activities with minimal environmental impact',
-      'Level 2A': 'Moderate activities requiring standard assessment',
-      'Level 2B': 'Complex activities requiring detailed assessment',
+      'Level 2': 'Moderate to complex activities requiring environmental assessment and review',
       'Level 3': 'High-impact activities requiring comprehensive EIA'
     };
     return descriptions[level] || '';
@@ -71,8 +69,7 @@ export function ComplianceReadOnly({ permit }: ComplianceReadOnlyProps) {
   const getLevelColor = (level: string) => {
     const colors = {
       'Level 1': 'bg-green-100 text-green-800',
-      'Level 2A': 'bg-yellow-100 text-yellow-800',
-      'Level 2B': 'bg-orange-100 text-orange-800',
+      'Level 2': 'bg-yellow-100 text-yellow-800',
       'Level 3': 'bg-red-100 text-red-800'
     };
     return colors[level] || 'bg-gray-100 text-gray-800';
@@ -121,21 +118,12 @@ export function ComplianceReadOnly({ permit }: ComplianceReadOnlyProps) {
                   <li>• Estimated processing: 30-45 days</li>
                 </>
               )}
-              {activityLevel === 'Level 2A' && (
+              {activityLevel === 'Level 2' && (
                 <>
                   <li>• Environmental impact assessment</li>
                   <li>• Public consultation requirements</li>
                   <li>• Technical review and analysis</li>
-                  <li>• Estimated processing: 60-90 days</li>
-                </>
-              )}
-              {activityLevel === 'Level 2B' && (
-                <>
-                  <li>• Detailed environmental impact assessment</li>
-                  <li>• Extended public consultation</li>
-                  <li>• Comprehensive technical review</li>
-                  <li>• Specialist assessments may be required</li>
-                  <li>• Estimated processing: 90-120 days</li>
+                  <li>• Estimated processing: 60-120 days</li>
                 </>
               )}
               {activityLevel === 'Level 3' && (

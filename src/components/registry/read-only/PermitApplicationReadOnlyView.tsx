@@ -107,14 +107,14 @@ export function PermitApplicationReadOnlyView({ application }: PermitApplication
   const getActivityLevel = (classification: string) => {
     const levelMap = {
       'mining': 'Level 3',
-      'manufacturing': 'Level 2B',
+      'manufacturing': 'Level 2',
       'energy': 'Level 3',
-      'waste_management': 'Level 2A',
-      'construction': 'Level 2A',
+      'waste_management': 'Level 2',
+      'construction': 'Level 2',
       'tourism': 'Level 1',
       'agriculture': 'Level 1',
-      'forestry': 'Level 2A',
-      'aquaculture': 'Level 2A',
+      'forestry': 'Level 2',
+      'aquaculture': 'Level 2',
       'other': 'Level 1'
     };
     return levelMap[classification] || 'Level 1';
@@ -123,8 +123,7 @@ export function PermitApplicationReadOnlyView({ application }: PermitApplication
   const getLevelColor = (level: string) => {
     const colors = {
       'Level 1': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-      'Level 2A': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-      'Level 2B': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+      'Level 2': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
       'Level 3': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
     };
     return colors[level] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';

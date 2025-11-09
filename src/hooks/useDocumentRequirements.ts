@@ -89,8 +89,8 @@ export function useDocumentRequirements(
         console.log('useDocumentRequirements - Extracted level number:', levelNum);
         
         if (levelNum) {
-          // For Level 2A and 2B, we need to match the activity_classification exactly
-          const activityClassification = activityLevel; // "Level 2A" or "Level 2B"
+          // Match by activity level and classification
+          const activityClassification = activityLevel; // "Level 1", "Level 2", or "Level 3"
           
           console.log('useDocumentRequirements - Looking for activity_classification:', activityClassification);
           
