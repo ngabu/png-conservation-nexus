@@ -40,6 +40,13 @@ export interface PermitApplicationDetails {
   // Step 5: Application Fee
   application_fee?: number;
   
+  // Project Details fields
+  project_description?: string;
+  project_start_date?: string;
+  project_end_date?: string;
+  environmental_impact?: string;
+  mitigation_measures?: string;
+  
   // Progress tracking
   current_step?: number;
   is_draft?: boolean;
