@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { useIntentRegistrations } from '@/hooks/useIntentRegistrations';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Building, User, Calendar, FileText, AlertCircle, CheckCircle, XCircle, Clock, Download, Mail } from 'lucide-react';
+import { Building, User, Calendar, FileText, AlertCircle, CheckCircle, XCircle, Clock, Download, Mail, MapPin, DollarSign, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { IntentRegistrationReadOnlyView } from './IntentRegistrationReadOnlyView';
 
 export function IntentRegistrationList() {
   const { user } = useAuth();
@@ -162,10 +163,24 @@ export function IntentRegistrationList() {
                       )}
                       {intent.entity?.name}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      <Badge variant="outline">{intent.activity_level}</Badge>
-                      <span>•</span>
-                      <span>Submitted {format(new Date(intent.created_at), 'MMM dd, yyyy')}</span>
+                    <CardDescription className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline">{intent.activity_level}</Badge>
+                        <span>•</span>
+                        <span>Submitted {format(new Date(intent.created_at), 'MMM dd, yyyy')}</span>
+                      </div>
+                      {intent.project_site_address && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate">{intent.project_site_address}</span>
+                        </div>
+                      )}
+                      {intent.estimated_cost_kina && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <DollarSign className="w-3 h-3" />
+                          <span>Est. Cost: K{intent.estimated_cost_kina.toLocaleString()}</span>
+                        </div>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
@@ -187,53 +202,13 @@ export function IntentRegistrationList() {
                       <TabsTrigger value="feedback">Official Feedback</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="details" className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-muted-foreground">Activity Level</Label>
-                          <p className="font-medium">{selectedIntentData.activity_level}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Status</Label>
-                          <div className="mt-1">{getStatusBadge(selectedIntentData.status)}</div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-muted-foreground">Activity Description</Label>
-                        <p className="mt-1">{selectedIntentData.activity_description}</p>
-                      </div>
-
-                      <div>
-                        <Label className="text-muted-foreground">Preparatory Work Description</Label>
-                        <p className="mt-1 whitespace-pre-wrap">{selectedIntentData.preparatory_work_description}</p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-muted-foreground flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            Commencement Date
-                          </Label>
-                          <p className="font-medium mt-1">
-                            {format(new Date(selectedIntentData.commencement_date), 'MMMM dd, yyyy')}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            Completion Date
-                          </Label>
-                          <p className="font-medium mt-1">
-                            {format(new Date(selectedIntentData.completion_date), 'MMMM dd, yyyy')}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Separator className="my-4" />
+                    <TabsContent value="details" className="space-y-4 mt-4">
+                      <IntentRegistrationReadOnlyView intent={selectedIntentData} />
+                      
+                      <Separator className="my-6" />
 
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">Supporting Documents</Label>
+                        <h3 className="text-lg font-semibold">Supporting Documents</h3>
                         {docsLoading ? (
                           <p className="text-sm text-muted-foreground">Loading documents...</p>
                         ) : documents.length > 0 ? (

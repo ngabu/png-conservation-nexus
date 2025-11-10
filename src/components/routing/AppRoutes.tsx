@@ -34,6 +34,7 @@ import PermitSurrender from "@/pages/permit-management/PermitSurrender";
 import ComplianceReports from "@/pages/permit-management/ComplianceReports";
 import PermitAmalgamation from "@/pages/permit-management/PermitAmalgamation";
 import EIAReviewDetail from "@/pages/eia/EIAReviewDetail";
+import RegistryApplicationDetail from "@/pages/RegistryApplicationDetail";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -323,6 +324,19 @@ export const AppRoutes = () => {
             allowedUnits={['compliance']}
           >
             <EIAReviewDetail />
+          </RoleBasedRoute>
+        } 
+      />
+
+      {/* Registry-specific routes */}
+      <Route 
+        path="/registry/applications/:id" 
+        element={
+          <RoleBasedRoute 
+            allowedRoles={['registry', 'admin']}
+            allowedUnits={['registry']}
+          >
+            <RegistryApplicationDetail />
           </RoleBasedRoute>
         } 
       />

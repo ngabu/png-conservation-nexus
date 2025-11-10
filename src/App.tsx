@@ -147,7 +147,7 @@ function App() {
               />
 
               <Route
-                path="/registry/applications/:permitId"
+                path="/registry/applications/:id"
                 element={
                   <ProtectedRoute 
                     allowedRoles={['staff', 'admin', 'super_admin']}

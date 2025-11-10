@@ -12,9 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useDocuments, DocumentInfo } from '@/hooks/useDocuments';
 import { useIntentDrafts } from '@/hooks/useIntentDrafts';
-import { Building, User, Calendar, AlertCircle, FileText, Upload, Trash2, Download, Save, FolderOpen } from 'lucide-react';
+import { usePrescribedActivities } from '@/hooks/usePrescribedActivities';
+import { Building, User, Calendar, AlertCircle, FileText, Upload, Trash2, Download, Save, FolderOpen, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function IntentRegistrationNew() {
   const { user } = useAuth();
@@ -22,6 +24,7 @@ export function IntentRegistrationNew() {
   const { toast } = useToast();
   const { uploadDraftDocument, fetchUserDraftDocuments, linkDraftsToIntent, deleteDocument: deleteDocumentFn } = useDocuments();
   const { drafts, loading: draftsLoading, saveDraft, deleteDraft } = useIntentDrafts(user?.id);
+  const { data: activities } = usePrescribedActivities();
   
   const [formData, setFormData] = useState({
     entity_id: '',
@@ -30,6 +33,15 @@ export function IntentRegistrationNew() {
     preparatory_work_description: '',
     commencement_date: '',
     completion_date: '',
+    project_site_address: '',
+    project_site_description: '',
+    site_ownership_details: '',
+    government_agreement: '',
+    departments_approached: '',
+    approvals_required: '',
+    landowner_negotiation_status: '',
+    estimated_cost_kina: '',
+    prescribed_activity_id: '',
   });
   
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +61,15 @@ export function IntentRegistrationNew() {
         preparatory_work_description: formData.preparatory_work_description || null,
         commencement_date: formData.commencement_date || null,
         completion_date: formData.completion_date || null,
+        project_site_address: formData.project_site_address || null,
+        project_site_description: formData.project_site_description || null,
+        site_ownership_details: formData.site_ownership_details || null,
+        government_agreement: formData.government_agreement || null,
+        departments_approached: formData.departments_approached || null,
+        approvals_required: formData.approvals_required || null,
+        landowner_negotiation_status: formData.landowner_negotiation_status || null,
+        estimated_cost_kina: formData.estimated_cost_kina ? parseFloat(formData.estimated_cost_kina) : null,
+        prescribed_activity_id: formData.prescribed_activity_id || null,
       }, currentDraftId);
       
       if (!currentDraftId) {
@@ -69,6 +90,15 @@ export function IntentRegistrationNew() {
         preparatory_work_description: draft.preparatory_work_description || '',
         commencement_date: draft.commencement_date || '',
         completion_date: draft.completion_date || '',
+        project_site_address: draft.project_site_address || '',
+        project_site_description: draft.project_site_description || '',
+        site_ownership_details: draft.site_ownership_details || '',
+        government_agreement: draft.government_agreement || '',
+        departments_approached: draft.departments_approached || '',
+        approvals_required: draft.approvals_required || '',
+        landowner_negotiation_status: draft.landowner_negotiation_status || '',
+        estimated_cost_kina: draft.estimated_cost_kina?.toString() || '',
+        prescribed_activity_id: draft.prescribed_activity_id || '',
       });
       setCurrentDraftId(draft.id);
       setShowDrafts(false);
@@ -126,6 +156,15 @@ export function IntentRegistrationNew() {
           preparatory_work_description: formData.preparatory_work_description,
           commencement_date: formData.commencement_date,
           completion_date: formData.completion_date,
+          project_site_address: formData.project_site_address,
+          project_site_description: formData.project_site_description,
+          site_ownership_details: formData.site_ownership_details,
+          government_agreement: formData.government_agreement,
+          departments_approached: formData.departments_approached,
+          approvals_required: formData.approvals_required,
+          landowner_negotiation_status: formData.landowner_negotiation_status,
+          estimated_cost_kina: formData.estimated_cost_kina ? parseFloat(formData.estimated_cost_kina) : null,
+          prescribed_activity_id: formData.prescribed_activity_id || null,
           status: 'pending',
         })
         .select()
@@ -155,6 +194,15 @@ export function IntentRegistrationNew() {
         preparatory_work_description: '',
         commencement_date: '',
         completion_date: '',
+        project_site_address: '',
+        project_site_description: '',
+        site_ownership_details: '',
+        government_agreement: '',
+        departments_approached: '',
+        approvals_required: '',
+        landowner_negotiation_status: '',
+        estimated_cost_kina: '',
+        prescribed_activity_id: '',
       });
       setDraftDocuments([]);
       setCurrentDraftId(undefined);
@@ -225,8 +273,9 @@ export function IntentRegistrationNew() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-start justify-between">
         <div>
           <h2 className="text-3xl font-bold text-foreground">New Intent Registration</h2>
           <p className="text-muted-foreground mt-2">
@@ -315,9 +364,19 @@ export function IntentRegistrationNew() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="entity_id">
-                    Entity (Individual or Organization) *
-                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="entity_id">
+                      Entity (Individual or Organization) *
+                    </Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Select the legal entity (individual, company, or government body) that will be conducting the preparatory work.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Select
                     value={formData.entity_id}
                     onValueChange={(value) => setFormData({ ...formData, entity_id: value })}
@@ -358,7 +417,9 @@ export function IntentRegistrationNew() {
                   <Label htmlFor="activity_level">Activity Level *</Label>
                   <Select
                     value={formData.activity_level}
-                    onValueChange={(value) => setFormData({ ...formData, activity_level: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, activity_level: value, prescribed_activity_id: '' });
+                    }}
                     required
                   >
                     <SelectTrigger id="activity_level" className="bg-glass/50">
@@ -372,7 +433,56 @@ export function IntentRegistrationNew() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="activity_description">Activity Description *</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="prescribed_activity_id">Prescribed Activity *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Select the specific prescribed activity from the Environment (Prescribed Activities) Regulation 2002 that matches your intended work.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select
+                    value={formData.prescribed_activity_id}
+                    onValueChange={(value) => setFormData({ ...formData, prescribed_activity_id: value })}
+                    required
+                    disabled={!formData.activity_level}
+                  >
+                    <SelectTrigger id="prescribed_activity_id" className="bg-glass/50">
+                      <SelectValue placeholder={formData.activity_level ? "Select prescribed activity" : "Select activity level first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activities
+                        ?.filter(activity => {
+                          const levelMap: { [key: string]: number } = {
+                            'Level 2': 2,
+                            'Level 3': 3
+                          };
+                          return activity.level === levelMap[formData.activity_level];
+                        })
+                        .map((activity) => (
+                          <SelectItem key={activity.id} value={activity.id}>
+                            {activity.category_number}: {activity.activity_description}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="activity_description">Activity Description *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Briefly describe the main activity you intend to carry out after the preparatory work is complete.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Textarea
                     id="activity_description"
                     value={formData.activity_description}
@@ -385,27 +495,233 @@ export function IntentRegistrationNew() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="preparatory_work_description">Preparatory Work Description *</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="preparatory_work_description">Scope and Description of Preparatory Work (max 500 words) *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Provide a detailed description (limit 500 words) of the preparatory work, including feasibility studies, environmental studies, and applications for approvals.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Textarea
                     id="preparatory_work_description"
                     value={formData.preparatory_work_description}
                     onChange={(e) => setFormData({ ...formData, preparatory_work_description: e.target.value })}
-                    placeholder="Provide a 1-2 page description of the preparatory work to be undertaken..."
+                    placeholder="Provide a description of the preparatory work to be undertaken..."
                     required
                     rows={8}
                     className="bg-glass/50"
+                    maxLength={3000}
                   />
                   <p className="text-sm text-muted-foreground">
-                    Describe the initial site work to be undertaken before the main activity begins.
+                    Describe the initial site work to be undertaken before the main activity begins (limit 500 words).
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="project_site_address">Project Site Address *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Provide the physical address or location details where the preparatory work will be conducted.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="project_site_address"
+                    value={formData.project_site_address}
+                    onChange={(e) => setFormData({ ...formData, project_site_address: e.target.value })}
+                    placeholder="Enter the physical address of the project site..."
+                    required
+                    className="bg-glass/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="project_site_description">Description of Project Site *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Describe the location characteristics, terrain, current land use, and any notable environmental or geographical features of the site.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="project_site_description"
+                    value={formData.project_site_description}
+                    onChange={(e) => setFormData({ ...formData, project_site_description: e.target.value })}
+                    placeholder="Provide details about the project site location and characteristics..."
+                    required
+                    rows={4}
+                    className="bg-glass/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="site_ownership_details">Details of Site Ownership *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Include information about land ownership, tenure type, legal description, and any relevant documentation.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="site_ownership_details"
+                    value={formData.site_ownership_details}
+                    onChange={(e) => setFormData({ ...formData, site_ownership_details: e.target.value })}
+                    placeholder="Provide information about land ownership, tenure, and legal description..."
+                    required
+                    rows={4}
+                    className="bg-glass/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="government_agreement">Agreement with Government of Papua New Guinea *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Specify any existing agreements, MOUs, or negotiations with the PNG Government related to this activity.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="government_agreement"
+                    value={formData.government_agreement}
+                    onChange={(e) => setFormData({ ...formData, government_agreement: e.target.value })}
+                    placeholder="Specify any agreements with PNG Government..."
+                    required
+                    rows={3}
+                    className="bg-glass/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="departments_approached">Other Government Departments or Statutory Bodies Approached *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>List all government departments, agencies, or statutory bodies you have consulted or approached regarding this activity.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="departments_approached"
+                    value={formData.departments_approached}
+                    onChange={(e) => setFormData({ ...formData, departments_approached: e.target.value })}
+                    placeholder="List any government departments or statutory bodies you have consulted..."
+                    required
+                    rows={3}
+                    className="bg-glass/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="approvals_required">Other Formal Government Approvals Required *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>List any other formal approvals, permits, or licenses required from government authorities for this activity.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="approvals_required"
+                    value={formData.approvals_required}
+                    onChange={(e) => setFormData({ ...formData, approvals_required: e.target.value })}
+                    placeholder="List any other government approvals needed for this activity..."
+                    required
+                    rows={3}
+                    className="bg-glass/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="landowner_negotiation_status">Status of Negotiations with Landowner/Resource Owner Groups *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Describe the current status of negotiations and agreements with relevant landowners or resource owner groups.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    id="landowner_negotiation_status"
+                    value={formData.landowner_negotiation_status}
+                    onChange={(e) => setFormData({ ...formData, landowner_negotiation_status: e.target.value })}
+                    placeholder="Describe the current status of negotiations with landowners or resource owners..."
+                    required
+                    rows={3}
+                    className="bg-glass/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="estimated_cost_kina">Estimated Cost of Works (in Kina) *</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Provide an estimate of the total cost for the preparatory work in Papua New Guinea Kina (PGK).</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="estimated_cost_kina"
+                    type="number"
+                    value={formData.estimated_cost_kina}
+                    onChange={(e) => setFormData({ ...formData, estimated_cost_kina: e.target.value })}
+                    placeholder="Enter estimated cost in Kina..."
+                    required
+                    min="0"
+                    step="0.01"
+                    className="bg-glass/50"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="commencement_date" className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Proposed Commencement Date *
-                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="commencement_date" className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Proposed Commencement Date *
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>The intended start date for the preparatory work (must be at least 1 month from today as per Section 48).</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <Input
                       id="commencement_date"
                       type="date"
@@ -417,10 +733,20 @@ export function IntentRegistrationNew() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="completion_date" className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Proposed Completion Date *
-                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="completion_date" className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Proposed Completion Date *
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>The expected completion date for the preparatory work.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <Input
                       id="completion_date"
                       type="date"
@@ -435,7 +761,17 @@ export function IntentRegistrationNew() {
                 {/* Document Upload Section */}
                 <div className="space-y-4 pt-6 border-t border-glass">
                   <div className="flex items-center justify-between">
-                    <Label>Supporting Documents</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>Supporting Documents</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Upload any relevant documents such as feasibility studies, site plans, environmental reports, or correspondence with authorities.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <div className="relative">
                       <Input
                         type="file"
@@ -507,6 +843,15 @@ export function IntentRegistrationNew() {
                         preparatory_work_description: '',
                         commencement_date: '',
                         completion_date: '',
+                        project_site_address: '',
+                        project_site_description: '',
+                        site_ownership_details: '',
+                        government_agreement: '',
+                        departments_approached: '',
+                        approvals_required: '',
+                        landowner_negotiation_status: '',
+                        estimated_cost_kina: '',
+                        prescribed_activity_id: '',
                       });
                       setDraftDocuments([]);
                       setCurrentDraftId(undefined);
@@ -570,6 +915,7 @@ export function IntentRegistrationNew() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

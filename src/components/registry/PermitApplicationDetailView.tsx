@@ -37,10 +37,6 @@ interface PermitApplicationDetail {
   description: string | null;
   created_at: string;
   application_date: string | null;
-  legal_description: string | null;
-  land_type: string | null;
-  owner_name: string | null;
-  proposed_works_description: string | null;
   activity_location: string | null;
   estimated_cost_kina: number | null;
   activity_classification: string | null;
@@ -51,8 +47,6 @@ interface PermitApplicationDetail {
   completion_date: string | null;
   coordinates: any;
   uploaded_files: any;
-  environmental_impact: string | null;
-  mitigation_measures: string | null;
   compliance_checks: any;
   fee_amount: number | null;
   payment_status: string | null;
@@ -317,18 +311,6 @@ export function PermitApplicationDetailView() {
                   <h4 className="font-medium text-sm text-muted-foreground">Description</h4>
                   <p className="text-sm">{application.description || 'Not provided'}</p>
                 </div>
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Legal Description</h4>
-                  <p className="text-sm">{application.legal_description || 'Not provided'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Land Type</h4>
-                  <p className="text-sm">{application.land_type || 'Not provided'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Owner Name</h4>
-                  <p className="text-sm">{application.owner_name || 'Not provided'}</p>
-                </div>
               </CardContent>
             </Card>
 
@@ -337,10 +319,6 @@ export function PermitApplicationDetailView() {
                 <CardTitle>Project Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground">Proposed Works</h4>
-                  <p className="text-sm">{application.proposed_works_description || 'Not provided'}</p>
-                </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground">Activity Location</h4>
                   <p className="text-sm">{application.activity_location || 'Not provided'}</p>

@@ -113,7 +113,10 @@ export function PermitDetailsReadOnlyView({ permit }: PermitDetailsReadOnlyViewP
     try {
       const { error } = await supabase
         .from('permit_applications')
-        .update({ permit_specific_fields: specificFieldsData })
+        .update({ 
+          // No longer updating permit_specific_fields as it's been removed
+          updated_at: new Date().toISOString()
+        })
         .eq('id', permit.id);
 
       if (error) throw error;

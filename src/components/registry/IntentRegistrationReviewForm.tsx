@@ -32,6 +32,15 @@ interface IntentRegistration {
   reviewed_by: string | null;
   reviewed_at: string | null;
   official_feedback_attachments: any[] | null;
+  project_site_address: string | null;
+  project_site_description: string | null;
+  site_ownership_details: string | null;
+  government_agreement: string | null;
+  departments_approached: string | null;
+  approvals_required: string | null;
+  landowner_negotiation_status: string | null;
+  estimated_cost_kina: number | null;
+  prescribed_activity_id: string | null;
   created_at: string;
   updated_at: string;
   entity?: {
@@ -163,7 +172,7 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
     }
   };
 
-  const handlePrintDocuments = () => {
+  const handleExportPDF = () => {
     window.print();
   };
 
@@ -448,12 +457,111 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
                 </div>
               </div>
 
+              {/* Project Site Information */}
+              {(intent.project_site_address || intent.project_site_description || intent.site_ownership_details) && (
+                <>
+                  <div className="pt-6 border-t border-glass">
+                    <h3 className="text-lg font-semibold mb-4">Project Site Information</h3>
+                  </div>
+
+                  {intent.project_site_address && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Project Site Address</Label>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm">{intent.project_site_address}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {intent.project_site_description && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Site Description</Label>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{intent.project_site_description}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {intent.site_ownership_details && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Site Ownership Details</Label>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{intent.site_ownership_details}</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Government & Stakeholder Engagement */}
+              {(intent.government_agreement || intent.departments_approached || intent.approvals_required || intent.landowner_negotiation_status) && (
+                <>
+                  <div className="pt-6 border-t border-glass">
+                    <h3 className="text-lg font-semibold mb-4">Government & Stakeholder Engagement</h3>
+                  </div>
+
+                  {intent.government_agreement && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Agreement with Government of PNG</Label>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{intent.government_agreement}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {intent.departments_approached && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Departments/Statutory Bodies Approached</Label>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{intent.departments_approached}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {intent.approvals_required && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Other Formal Government Approvals Required</Label>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{intent.approvals_required}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {intent.landowner_negotiation_status && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Landowner Negotiation Status</Label>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{intent.landowner_negotiation_status}</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Financial Information */}
+              {intent.estimated_cost_kina && (
+                <>
+                  <div className="pt-6 border-t border-glass">
+                    <h3 className="text-lg font-semibold mb-4">Project Financial Information</h3>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Estimated Cost of Works</Label>
+                    <div className="p-3 bg-primary/10 rounded-lg">
+                      <p className="text-2xl font-bold text-primary">
+                        K{intent.estimated_cost_kina.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="space-y-4 pt-6 border-t border-glass">
                 <div className="flex items-center justify-between">
                   <Label className="text-muted-foreground">Supporting Documents ({documents.length})</Label>
-                  <Button variant="outline" size="sm" onClick={handlePrintDocuments}>
+                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
                     <FileText className="w-4 h-4 mr-2" />
-                    Print All
+                    Export PDF
                   </Button>
                 </div>
                 {documents.length === 0 ? (

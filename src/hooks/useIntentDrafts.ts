@@ -12,6 +12,15 @@ export interface IntentDraft {
   commencement_date: string | null;
   completion_date: string | null;
   draft_name: string | null;
+  project_site_address: string | null;
+  project_site_description: string | null;
+  site_ownership_details: string | null;
+  government_agreement: string | null;
+  departments_approached: string | null;
+  approvals_required: string | null;
+  landowner_negotiation_status: string | null;
+  estimated_cost_kina: number | null;
+  prescribed_activity_id: string | null;
   created_at: string;
   updated_at: string;
 }

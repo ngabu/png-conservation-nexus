@@ -35,8 +35,10 @@ import {
   Upload,
   DollarSign,
   CheckCircle2,
-  FileCheck
+  FileCheck,
+  History
 } from 'lucide-react';
+import { RegistryAuditTrail } from './RegistryAuditTrail';
 
 // Assessment status mapping for better UX
 const ASSESSMENT_STATUS_OPTIONS = {
@@ -51,8 +53,12 @@ const STATUS_DISPLAY_TO_VALUE = Object.entries(ASSESSMENT_STATUS_OPTIONS).reduce
   return acc;
 }, {} as Record<string, keyof typeof ASSESSMENT_STATUS_OPTIONS>);
 
-export function PermitApplicationReviewForm() {
-  const { permitId: assessmentId } = useParams<{ permitId: string }>();
+interface PermitApplicationReviewFormProps {
+  assessmentId?: string;
+}
+
+export function PermitApplicationReviewForm({ assessmentId: propAssessmentId }: PermitApplicationReviewFormProps) {
+  const { id: paramAssessmentId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile } = useAuth();
@@ -61,34 +67,47 @@ export function PermitApplicationReviewForm() {
   const [application, setApplication] = useState<any>(null);
   const [entityDetails, setEntityDetails] = useState<any>(null);
   const [appLoading, setAppLoading] = useState(true);
+  
+  // Use prop assessment ID first, then param
+  const assessmentId = propAssessmentId || paramAssessmentId;
 
   useEffect(() => {
     const fetchApplication = async () => {
-      if (!assessmentId) return;
-      
+      if (!assessmentId) {
+        console.error('No assessment ID provided');
+        setApplication(null);
+        setAppLoading(false);
+        return;
+      }
+
       try {
-        // First get the assessment to find the permit application ID
-        const { data: assessmentData, error: assessmentError } = await supabase
+        console.log('Fetching assessment and application for ID:', assessmentId);
+        
+        // Fetch the assessment to get the permit application ID
+        const { data: assessment, error: assessmentError } = await supabase
           .from('initial_assessments')
           .select('permit_application_id')
           .eq('id', assessmentId)
-          .maybeSingle();
-          
+          .single();
+        
         if (assessmentError) throw assessmentError;
-        if (!assessmentData) {
-          setApplication(null);
-          setAppLoading(false);
-          return;
+        
+        if (!assessment?.permit_application_id) {
+          throw new Error('Assessment has no linked permit application');
         }
 
-        // Then fetch the permit application
+        console.log('Found permit application ID:', assessment.permit_application_id);
+
+        // Fetch the full permit application details
         const { data, error } = await supabase
           .from('permit_applications')
           .select('*')
-          .eq('id', (assessmentData as any).permit_application_id)
-          .maybeSingle();
+          .eq('id', assessment.permit_application_id)
+          .single();
           
         if (error) throw error;
+        
+        console.log('Successfully loaded application:', data?.title);
         setApplication(data);
 
         // Fetch entity details if entity_id exists
@@ -105,6 +124,12 @@ export function PermitApplicationReviewForm() {
         }
       } catch (error) {
         console.error('Error fetching application:', error);
+        toast({
+          title: "Error Loading Application",
+          description: "Failed to load the permit application details.",
+          variant: "destructive",
+        });
+        setApplication(null);
       } finally {
         setAppLoading(false);
       }
@@ -262,7 +287,7 @@ export function PermitApplicationReviewForm() {
         {/* Registry Assessment Forms */}
         <div className="space-y-6">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 md:grid-cols-10 bg-muted/50 h-auto p-1">
+            <TabsList className="grid w-full grid-cols-5 md:grid-cols-11 bg-muted/50 h-auto p-1">
               <TabsTrigger value="basic" className="flex flex-col items-center gap-1 text-xs h-auto py-2">
                 <User className="w-4 h-4" />
                 <span className="hidden sm:inline">Basic Info</span>
@@ -312,6 +337,11 @@ export function PermitApplicationReviewForm() {
                 <FileCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">Assessment</span>
                 <span className="sm:hidden">Review</span>
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="flex flex-col items-center gap-1 text-xs h-auto py-2">
+                <History className="w-4 h-4" />
+                <span className="hidden sm:inline">Audit Trail</span>
+                <span className="sm:hidden">Audit</span>
               </TabsTrigger>
             </TabsList>
             
@@ -437,138 +467,154 @@ export function PermitApplicationReviewForm() {
             </TabsContent>
             
             <TabsContent value="assessment">
-              <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Assessment Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {assessment && (
-                <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Current Status</Label>
-                      <Badge className="ml-2">
-                        {ASSESSMENT_STATUS_OPTIONS[assessment.assessment_status as keyof typeof ASSESSMENT_STATUS_OPTIONS] || assessment.assessment_status.replace(/_/g, ' ')}
-                      </Badge>
-                    </div>
-                  
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Assessment Date</Label>
-                    <p className="font-medium">
-                      {new Date(assessment.assessment_date).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  {assessment.assessment_notes && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Current Notes</Label>
-                      <p className="text-sm bg-muted p-2 rounded">{assessment.assessment_notes}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Validation Checklist */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Validation</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Document Completeness</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span>Supporting documents uploaded</span>
-                    <Badge variant={application.uploaded_files && application.uploaded_files.length > 0 ? "default" : "destructive"}>
-                      {application.uploaded_files && application.uploaded_files.length > 0 ? "✓" : "✗"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Mandatory fields complete</span>
-                    <Badge variant={application.mandatory_fields_complete ? "default" : "destructive"}>
-                      {application.mandatory_fields_complete ? "✓" : "✗"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Legal declarations accepted</span>
-                    <Badge variant={application.legal_declaration_accepted ? "default" : "destructive"}>
-                      {application.legal_declaration_accepted ? "✓" : "✗"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Technical Requirements</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span>Environmental impact assessment</span>
-                    <Badge variant={application.environmental_impact ? "default" : "secondary"}>
-                      {application.environmental_impact ? "Provided" : "Not Provided"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Mitigation measures defined</span>
-                    <Badge variant={application.mitigation_measures ? "default" : "secondary"}>
-                      {application.mitigation_measures ? "Provided" : "Not Provided"}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <span className="text-sm font-medium">Activity classification</span>
-                    {application.activity_classification ? (
-                      <div className="space-y-2">
-                        <Badge variant="outline">{application.activity_classification}</Badge>
-                        {application.activity_level && (
-                          <Badge variant="secondary">{application.activity_level}</Badge>
-                        )}
+              {assessment ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Previous Assessment History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Current Status</Label>
+                        <Badge className="ml-2">
+                          {ASSESSMENT_STATUS_OPTIONS[assessment.assessment_status as keyof typeof ASSESSMENT_STATUS_OPTIONS] || assessment.assessment_status}
+                        </Badge>
                       </div>
-                    ) : (
-                      <Badge variant="secondary">Not Specified</Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
+                      {assessment.assessment_notes && (
+                        <div>
+                          <Label>Assessment Notes</Label>
+                          <p className="text-sm mt-1 p-3 bg-muted rounded-md">{assessment.assessment_notes}</p>
+                        </div>
+                      )}
+                      {assessment.feedback_provided && (
+                        <div>
+                          <Label>Feedback Provided to Applicant</Label>
+                          <p className="text-sm mt-1 p-3 bg-muted rounded-md">{assessment.feedback_provided}</p>
+                        </div>
+                      )}
+                      {assessment.assessment_outcome && (
+                        <div>
+                          <Label>Assessment Outcome</Label>
+                          <p className="text-sm mt-1">{assessment.assessment_outcome}</p>
+                        </div>
+                      )}
+                      {assessment.assessment_date && (
+                        <div>
+                          <Label>Assessment Date</Label>
+                          <p className="text-sm mt-1">{new Date(assessment.assessment_date).toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    No assessment history available
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
 
-              <Separator />
+            <TabsContent value="audit">
+              {application && (
+                <RegistryAuditTrail permitApplicationId={application.id} />
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
 
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Financial Information</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span>Estimated project cost</span>
-                    <Badge variant={application.estimated_cost_kina ? "default" : "secondary"}>
-                      {application.estimated_cost_kina ? `PGK ${application.estimated_cost_kina.toLocaleString()}` : "Not Provided"}
-                    </Badge>
+      {/* Registry Assessment Section - Always visible below the application form */}
+      <Separator className="my-8" />
+      
+      <Card className="border-2 border-primary/20">
+        <CardHeader className="bg-primary/5">
+          <CardTitle className="flex items-center text-xl">
+            <FileCheck className="w-6 h-6 mr-2" />
+            Registry Review & Feedback
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Provide your professional assessment and feedback for this permit application
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          {assessment ? (
+            <>
+              {/* Validation Checklist */}
+              <Card className="bg-muted/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Application Validation Checklist</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Document Completeness</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span>Supporting documents uploaded</span>
+                        <Badge variant={application.uploaded_files && application.uploaded_files.length > 0 ? "default" : "destructive"}>
+                          {application.uploaded_files && application.uploaded_files.length > 0 ? "✓ Yes" : "✗ No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Mandatory fields complete</span>
+                        <Badge variant={application.mandatory_fields_complete ? "default" : "destructive"}>
+                          {application.mandatory_fields_complete ? "✓ Yes" : "✗ No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Legal declarations accepted</span>
+                        <Badge variant={application.legal_declaration_accepted ? "default" : "destructive"}>
+                          {application.legal_declaration_accepted ? "✓ Yes" : "✗ No"}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>Application fee calculated</span>
-                    <Badge variant={application.fee_amount ? "default" : "secondary"}>
-                      {application.fee_amount ? `PGK ${application.fee_amount.toLocaleString()}` : "Not Calculated"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Assessment Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Assessment Decision</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="status">Assessment Status *</Label>
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Technical Requirements</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span>Environmental impact assessment</span>
+                        <Badge variant={application.environmental_impact ? "default" : "secondary"}>
+                          {application.environmental_impact ? "Provided" : "Not Provided"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Activity classification</span>
+                        <Badge variant={application.activity_classification ? "default" : "secondary"}>
+                          {application.activity_classification || "Not Specified"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Estimated project cost</span>
+                        <Badge variant={application.estimated_cost_kina ? "default" : "secondary"}>
+                          {application.estimated_cost_kina ? `K${application.estimated_cost_kina.toLocaleString()}` : "Not Provided"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-2">
+                <Label htmlFor="assessment_status" className="text-base font-semibold">Assessment Decision *</Label>
                 <Select
                   value={assessmentData.assessment_status}
-                  onValueChange={(value) => setAssessmentData(prev => ({ ...prev, assessment_status: value as any }))}
+                  onValueChange={(value) => {
+                    setAssessmentData({ 
+                      ...assessmentData, 
+                      assessment_status: value as any,
+                      assessment_outcome: value === 'passed' ? 'Approved for Next Stage' : 
+                                        value === 'failed' ? 'Rejected' : 
+                                        value === 'requires_clarification' ? 'Needs More Information' : ''
+                    });
+                  }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select your assessment decision..." />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(ASSESSMENT_STATUS_OPTIONS).map(([value, display]) => (
@@ -578,65 +624,86 @@ export function PermitApplicationReviewForm() {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  This determines the next step in the application workflow
+                </p>
               </div>
 
-              <div>
-                <Label htmlFor="outcome">Assessment Outcome *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="assessment_outcome" className="text-base font-semibold">Assessment Outcome *</Label>
                 <Select
                   value={assessmentData.assessment_outcome}
-                  onValueChange={(value) => setAssessmentData(prev => ({ ...prev, assessment_outcome: value }))}
+                  onValueChange={(value) => setAssessmentData({ ...assessmentData, assessment_outcome: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select outcome" />
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select outcome..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Approved for Next Stage">Approved for Next Stage</SelectItem>
-                    <SelectItem value="Rejected - Application Incomplete">Rejected - Application Incomplete</SelectItem>
-                    <SelectItem value="Pending - Awaiting Information">Pending - Awaiting Information</SelectItem>
-                    <SelectItem value="Conditional Approval">Conditional Approval</SelectItem>
+                    <SelectItem value="Approved for Next Stage">Approved for Next Stage (Technical Assessment)</SelectItem>
+                    <SelectItem value="Rejected">Rejected - Does Not Meet Requirements</SelectItem>
+                    <SelectItem value="Needs More Information">Needs More Information</SelectItem>
+                    <SelectItem value="Pending Review">Pending Further Review</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="notes">Registry Assessment Notes *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="assessment_notes" className="text-base font-semibold">Internal Assessment Notes *</Label>
                 <Textarea
-                  id="notes"
-                  placeholder="Document validation findings, missing requirements, and recommendations..."
+                  id="assessment_notes"
+                  placeholder="Enter detailed assessment notes, observations, compliance checks, and reasoning for your decision..."
                   value={assessmentData.assessment_notes}
-                  onChange={(e) => setAssessmentData(prev => ({ ...prev, assessment_notes: e.target.value }))}
-                  rows={4}
+                  onChange={(e) => setAssessmentData({ ...assessmentData, assessment_notes: e.target.value })}
+                  className="min-h-32 resize-y"
                 />
+                <p className="text-xs text-muted-foreground">
+                  ℹ️ These notes are for internal record keeping and will NOT be shared with the applicant
+                </p>
               </div>
 
-              <div>
-                <Label htmlFor="feedback">Feedback to Applicant</Label>
+              <div className="space-y-2">
+                <Label htmlFor="feedback_provided" className="text-base font-semibold">Feedback to Applicant</Label>
                 <Textarea
-                  id="feedback"
-                  placeholder="Clear feedback on what applicant needs to address (if applicable)..."
+                  id="feedback_provided"
+                  placeholder="Enter professional feedback that will be shared with the applicant regarding their application..."
                   value={assessmentData.feedback_provided}
-                  onChange={(e) => setAssessmentData(prev => ({ ...prev, feedback_provided: e.target.value }))}
-                  rows={3}
+                  onChange={(e) => setAssessmentData({ ...assessmentData, feedback_provided: e.target.value })}
+                  className="min-h-28 resize-y"
                 />
+                <p className="text-xs text-muted-foreground">
+                  📧 This feedback will be included in the notification sent to the applicant
+                </p>
               </div>
 
               <Separator />
 
-              <Button 
-                onClick={handleSubmitAssessment}
-                className="w-full"
-                disabled={!assessmentData.assessment_status || !assessmentData.assessment_notes || !assessmentData.assessment_outcome}
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Submit Assessment & Notify Applicant
-              </Button>
-            </CardContent>
-          </Card>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-      </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/RegistryDashboard')}
+                  size="lg"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmitAssessment}
+                  className="gap-2"
+                  size="lg"
+                  disabled={!assessmentData.assessment_status || !assessmentData.assessment_notes || !assessmentData.assessment_outcome}
+                >
+                  <Send className="w-4 h-4" />
+                  Submit Assessment & Notify Applicant
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No assessment record found for this application</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

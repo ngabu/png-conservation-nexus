@@ -23,6 +23,8 @@ export interface CalculatedFees {
   processingDays: number;
   administrationForm: string;
   technicalForm: string;
+  baseAdministrationFee?: number;
+  baseTechnicalFee?: number;
   isEstimated?: boolean;
   source?: 'official' | 'estimated';
 }
@@ -145,6 +147,7 @@ export const useFeeCalculation = () => {
 
       // Process Supabase response and apply modifiers based on additional parameters
       let calculatedFee = typeof data === 'number' ? data : 0;
+      const baseFee = calculatedFee; // Store base fee before multipliers
       
       // Apply project cost multipliers
       if (params.projectCost) {
@@ -174,6 +177,8 @@ export const useFeeCalculation = () => {
         calculatedFee += params.wasteDetails.quantity * 50; // $50 per unit of waste
       }
 
+      const baseAdminFee = baseFee * 0.3;
+      const baseTechFee = baseFee * 0.7;
       const adminFee = calculatedFee * 0.3; // Admin portion
       const techFee = calculatedFee * 0.7; // Technical portion
 
@@ -181,6 +186,8 @@ export const useFeeCalculation = () => {
         administrationFee: Math.round(adminFee * 100) / 100,
         technicalFee: Math.round(techFee * 100) / 100,
         totalFee: Math.round(calculatedFee * 100) / 100,
+        baseAdministrationFee: Math.round(baseAdminFee * 100) / 100,
+        baseTechnicalFee: Math.round(baseTechFee * 100) / 100,
         processingDays: customProcessingDays || 30,
         administrationForm: 'Official Administration Form',
         technicalForm: 'Official Technical Form',
@@ -308,10 +315,29 @@ export const useFeeCalculation = () => {
         variant: "default"
       });
 
+      // Calculate base fees before multipliers for display
+      let baseAdmin = 500;
+      let baseTech = 5000;
+      
+      if (params.activityLevel) {
+        if (params.activityLevel.includes('Level 3')) {
+          baseAdmin *= 4.0;
+          baseTech *= 6.0;
+        } else if (params.activityLevel.includes('Level 2')) {
+          baseAdmin *= 2.5;
+          baseTech *= 3.5;
+        } else {
+          baseAdmin *= 1.5;
+          baseTech *= 2.0;
+        }
+      }
+
       return {
         administrationFee: Math.round(baseAdminFee * 100) / 100,
         technicalFee: Math.round(baseTechFee * 100) / 100,
         totalFee: totalCalculated,
+        baseAdministrationFee: Math.round(baseAdmin * 100) / 100,
+        baseTechnicalFee: Math.round(baseTech * 100) / 100,
         processingDays: 30 + (params.durationYears ? (params.durationYears - 1) * 3 : 0),
         administrationForm: `${params.activityLevel} Administration Form`,
         technicalForm: `${params.permitType} Technical Form`,
@@ -335,6 +361,8 @@ export const useFeeCalculation = () => {
       administrationFee: Math.round(administrationFee * 100) / 100,
       technicalFee: technicalFee,
       totalFee: Math.round(totalFee * 100) / 100,
+      baseAdministrationFee: Math.round(administrationFee * 100) / 100,
+      baseTechnicalFee: technicalFee,
       processingDays: feeStructure.base_processing_days,
       administrationForm: feeStructure.administration_form,
       technicalForm: feeStructure.technical_form,

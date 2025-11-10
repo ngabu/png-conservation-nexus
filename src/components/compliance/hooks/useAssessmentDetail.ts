@@ -29,8 +29,6 @@ interface AssessmentDetail {
     description: string | null;
     activity_location: string | null;
     coordinates: any;
-    environmental_impact: string | null;
-    mitigation_measures: string | null;
     compliance_checks: any;
     uploaded_files: any;
     application_date: string;
@@ -88,8 +86,6 @@ export function useAssessmentDetail(assessmentId: string) {
             description,
             activity_location,
             coordinates,
-            environmental_impact,
-            mitigation_measures,
             compliance_checks,
             uploaded_files,
             application_date,

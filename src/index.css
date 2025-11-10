@@ -144,3 +144,80 @@
     background-position: 0 0, 0 0, 0 0, 0 0;
   }
 }
+
+/* Print Styles for PDF Export */
+@media print {
+  body {
+    background: white !important;
+    background-image: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* Hide navigation, sidebars, and buttons when printing */
+  nav,
+  aside,
+  header,
+  footer,
+  button:not(.print-visible),
+  [role="navigation"],
+  [role="complementary"] {
+    display: none !important;
+  }
+
+  /* Ensure content fits on page */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Card styling for print */
+  .bg-glass,
+  .backdrop-blur-sm {
+    background: white !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Ensure text is readable */
+  .text-muted-foreground {
+    color: #666 !important;
+  }
+
+  .text-foreground {
+    color: #000 !important;
+  }
+
+  /* Badge styling for print */
+  .badge {
+    border: 1px solid #333 !important;
+  }
+
+  /* Remove shadows for cleaner print */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* Optimize spacing for print */
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+
+  /* Ensure tables and grids display properly */
+  table,
+  .grid {
+    page-break-inside: auto;
+  }
+
+  tr,
+  .grid > * {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}

@@ -31,9 +31,6 @@ export interface PermitForAssessment {
   completion_date?: string | null;
   estimated_cost_kina?: number | null;
   activity_classification?: string | null;
-  environmental_impact?: string | null;
-  mitigation_measures?: string | null;
-  permit_specific_fields?: Record<string, any> | null;
   entity: {
     id?: string;
     name: string;

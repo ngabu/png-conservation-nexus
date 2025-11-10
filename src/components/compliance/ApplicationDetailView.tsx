@@ -13,8 +13,6 @@ interface ApplicationDetail {
   activity_level: string;
   description: string | null;
   activity_location: string | null;
-  environmental_impact: string | null;
-  mitigation_measures: string | null;
   application_date: string;
   uploaded_files: any;
   fee_amount?: number;

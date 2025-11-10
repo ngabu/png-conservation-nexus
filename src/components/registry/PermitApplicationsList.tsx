@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { usePermitApplications } from '@/hooks/usePermitApplications';
 import { useRegistryStaff } from './hooks/useRegistryStaff';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,8 +47,64 @@ export function PermitApplicationsList() {
     }
   };
 
-  const handleViewApplication = (applicationId: string) => {
-    navigate(`/registry/applications/${applicationId}`);
+  const handleViewApplication = async (applicationId: string) => {
+    console.log('🔍 handleViewApplication called with applicationId:', applicationId);
+    
+    try {
+      // Find or create the assessment for this application
+      const { data: existingAssessment, error: fetchError } = await supabase
+        .from('initial_assessments')
+        .select('id')
+        .eq('permit_application_id', applicationId)
+        .maybeSingle();
+      
+      console.log('📋 Found existing assessment:', existingAssessment);
+      console.log('❌ Fetch error:', fetchError);
+      
+      if (existingAssessment) {
+        console.log('✅ Navigating to existing assessment:', `/registry/applications/${existingAssessment.id}`);
+        navigate(`/registry/applications/${existingAssessment.id}`);
+      } else {
+        console.log('🆕 Creating new assessment for application:', applicationId);
+        
+        // Create assessment if it doesn't exist
+        const { data: newAssessment, error } = await supabase
+          .from('initial_assessments')
+          .insert({
+            permit_application_id: applicationId,
+            assessed_by: profile?.user_id || '00000000-0000-0000-0000-000000000000',
+            assessment_status: 'pending',
+            assessment_notes: 'Assessment created for review',
+            assessment_outcome: 'pending_review',
+            permit_activity_type: 'new_application'
+          })
+          .select('id')
+          .single();
+        
+        console.log('🆕 Created new assessment:', newAssessment);
+        console.log('❌ Creation error:', error);
+        
+        if (error) {
+          console.error('Failed to create assessment:', error);
+          throw error;
+        }
+        
+        if (newAssessment) {
+          console.log('✅ Navigating to new assessment:', `/registry/applications/${newAssessment.id}`);
+          navigate(`/registry/applications/${newAssessment.id}`);
+        } else {
+          console.error('⚠️ No assessment created but no error');
+          throw new Error('Failed to create assessment - no data returned');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error in handleViewApplication:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open application for review.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAssignOfficer = async (applicationId: string, officerId: string) => {
