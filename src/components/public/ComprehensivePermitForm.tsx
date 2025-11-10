@@ -125,7 +125,7 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
               applicantEmail: '', // Not stored in DB currently
               applicantPhone: '', // Not stored in DB currently
               organizationName: data.entity_name || '',
-              projectDescription: data.description || '',
+              projectDescription: data.project_description || data.description || '',
               projectLocation: data.activity_location || '',
               coordinates: (typeof data.coordinates === 'object' && data.coordinates && 'lat' in data.coordinates) 
                 ? data.coordinates as { lat: number; lng: number }
@@ -137,10 +137,10 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
               tenure: '',
               prescribedActivity: data.permit_type || '',
               feeCategory: 'Green Category',
-              projectStartDate: data.commencement_date || '',
-              projectEndDate: data.completion_date || '',
-              environmentalImpact: '',
-              mitigationMeasures: '',
+              projectStartDate: data.project_start_date || data.commencement_date || '',
+              projectEndDate: data.project_end_date || data.completion_date || '',
+              environmentalImpact: data.environmental_impact || '',
+              mitigationMeasures: data.mitigation_measures || '',
               uploadedFiles: Array.isArray(data.uploaded_files) ? data.uploaded_files : [],
               calculatedFees: data.fee_breakdown,
               activity_level: data.activity_level || '',
@@ -269,18 +269,22 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
         description: formData.projectDescription,
         status: isDraft ? 'draft' : 'submitted',
         user_id: user.id,
-        entity_id: formData.entity_id || null, // Add entity_id to save
+        entity_id: formData.entity_id || null,
         entity_name: formData.entity_name || formData.organizationName,
         entity_type: formData.entity_type || (formData.organizationName ? 'COMPANY' : 'INDIVIDUAL'),
-        // Project details
-        proposed_works_description: formData.projectDescription,
+        // Project details - use correct database columns
+        project_description: formData.projectDescription,
+        project_start_date: formData.projectStartDate || null,
+        project_end_date: formData.projectEndDate || null,
+        environmental_impact: formData.environmentalImpact || null,
+        mitigation_measures: formData.mitigationMeasures || null,
         activity_location: formData.projectLocation,
         estimated_cost_kina: 0,
         compliance_checks: formData.complianceChecks,
         coordinates: formData.coordinates,
         uploaded_files: formData.uploadedFiles,
         is_draft: isDraft,
-        current_step: 10, // Updated to include all 10 steps
+        current_step: 10,
         application_number: generatedAppNumber,
         application_date: isDraft ? null : new Date().toISOString(),
         // PNG Environment Act 2000 fields - Activity Classification & Requirements
@@ -289,8 +293,8 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
         activity_category: formData.activity_category || null,
         activity_subcategory: formData.activity_subcategory || null,
         activity_classification: formData.activity_description || null,
-        permit_category: formData.permit_category || null, // Save permit_category
-        permit_type_id: formData.permit_type_id || null, // Save permit_type_id
+        permit_category: formData.permit_category || null,
+        permit_type_id: formData.permit_type_id || null,
         eia_required: formData.eia_required,
         eis_required: formData.eis_required,
         // PNG Environment Act 2000 fields - Public Consultation
