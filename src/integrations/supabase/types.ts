@@ -1374,6 +1374,7 @@ export type Database = {
           entity_id: string | null
           entity_name: string | null
           entity_type: string | null
+          environmental_impact: string | null
           estimated_cost_kina: number | null
           existing_permits_details: string | null
           expiry_date: string | null
@@ -1395,6 +1396,7 @@ export type Database = {
           marine_dumping_details: Json | null
           mining_chemical_details: Json | null
           mining_permit_details: Json | null
+          mitigation_measures: string | null
           monitoring_license_details: Json | null
           noise_emission_details: Json | null
           ods_details: Json | null
@@ -1410,6 +1412,9 @@ export type Database = {
           permit_type_id: string | null
           permit_type_specific: string | null
           pesticide_details: Json | null
+          project_description: string | null
+          project_end_date: string | null
+          project_start_date: string | null
           public_consultation_proof: Json | null
           rehabilitation_details: Json | null
           renewable_energy_details: Json | null
@@ -1466,6 +1471,7 @@ export type Database = {
           entity_id?: string | null
           entity_name?: string | null
           entity_type?: string | null
+          environmental_impact?: string | null
           estimated_cost_kina?: number | null
           existing_permits_details?: string | null
           expiry_date?: string | null
@@ -1487,6 +1493,7 @@ export type Database = {
           marine_dumping_details?: Json | null
           mining_chemical_details?: Json | null
           mining_permit_details?: Json | null
+          mitigation_measures?: string | null
           monitoring_license_details?: Json | null
           noise_emission_details?: Json | null
           ods_details?: Json | null
@@ -1502,6 +1509,9 @@ export type Database = {
           permit_type_id?: string | null
           permit_type_specific?: string | null
           pesticide_details?: Json | null
+          project_description?: string | null
+          project_end_date?: string | null
+          project_start_date?: string | null
           public_consultation_proof?: Json | null
           rehabilitation_details?: Json | null
           renewable_energy_details?: Json | null
@@ -1558,6 +1568,7 @@ export type Database = {
           entity_id?: string | null
           entity_name?: string | null
           entity_type?: string | null
+          environmental_impact?: string | null
           estimated_cost_kina?: number | null
           existing_permits_details?: string | null
           expiry_date?: string | null
@@ -1579,6 +1590,7 @@ export type Database = {
           marine_dumping_details?: Json | null
           mining_chemical_details?: Json | null
           mining_permit_details?: Json | null
+          mitigation_measures?: string | null
           monitoring_license_details?: Json | null
           noise_emission_details?: Json | null
           ods_details?: Json | null
@@ -1594,6 +1606,9 @@ export type Database = {
           permit_type_id?: string | null
           permit_type_specific?: string | null
           pesticide_details?: Json | null
+          project_description?: string | null
+          project_end_date?: string | null
+          project_start_date?: string | null
           public_consultation_proof?: Json | null
           rehabilitation_details?: Json | null
           renewable_energy_details?: Json | null
