@@ -21,7 +21,8 @@ import {
   Cog,
   TreePine,
   Search,
-  Archive
+  Archive,
+  Eye
 } from "lucide-react";
 
 export interface MenuItem {
@@ -37,6 +38,13 @@ export const publicMenuItems: MenuItem[] = [
   { title: "Submit Application", url: "/submit-application", icon: Plus },
   { title: "My Applications", url: "/applications", icon: ClipboardList },
   { title: "My Permits", url: "/permits", icon: Shield },
+  {
+    title: "Permit Management",
+    icon: Shield,
+    subItems: [
+      { title: "Permit Enforcement", url: "/permit-management/enforcement-inspections", icon: Eye },
+    ]
+  },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Payments", url: "/payments", icon: DollarSign },
   { title: "Profile", url: "/profile", icon: User },

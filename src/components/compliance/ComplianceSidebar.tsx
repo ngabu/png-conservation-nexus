@@ -8,6 +8,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
@@ -15,7 +18,6 @@ import {
   LayoutDashboard, 
   FileText, 
   Shield,
-  Microscope,
   ClipboardCheck,
   Users,
   BarChart3,
@@ -23,8 +25,19 @@ import {
   TreePine,
   User,
   Cog,
-  LogOut
+  LogOut,
+  ChevronDown,
+  ChevronRight,
+  GitMerge,
+  FileEdit,
+  ShieldCheck,
+  Gavel,
+  RotateCw,
+  FileX,
+  ArrowRightLeft,
+  ClipboardList
 } from "lucide-react"
+import { useState } from "react"
 import { useUnitNotifications } from "@/hooks/useUnitNotifications"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -37,9 +50,6 @@ interface ComplianceNavigationItem {
 
 const complianceNavigationItems: ComplianceNavigationItem[] = [
   { title: "Dashboard", value: "dashboard", icon: LayoutDashboard },
-  { title: "Applications", value: "applications", icon: FileText },
-  { title: "Technical Assessments", value: "technical", icon: Microscope },
-  { title: "Environmental Assessments", value: "environmental", icon: Shield },
   { title: "Inspections", value: "inspections", icon: ClipboardCheck },
   { title: "Team Management", value: "team", icon: Users, managerOnly: true },
   { title: "Reports", value: "reports", icon: BarChart3 },
@@ -60,6 +70,7 @@ export function ComplianceSidebar({ activeTab, onTabChange }: ComplianceSidebarP
   const { user, profile, signOut } = useAuth()
   const { notifications } = useUnitNotifications('compliance')
   const { state, isMobile } = useSidebar()
+  const [assessmentsOpen, setAssessmentsOpen] = useState(false)
   
   const isManager = profile?.staff_position && ['manager', 'director', 'managing_director'].includes(profile.staff_position)
   const unreadCount = notifications.filter(n => !n.is_read).length
@@ -131,6 +142,128 @@ export function ComplianceSidebar({ activeTab, onTabChange }: ComplianceSidebarP
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Assessments with submenu */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => setAssessmentsOpen(!assessmentsOpen)}
+                  className="w-full hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
+                >
+                  <FileText className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="ml-3 flex-1 text-left">Assessments</span>
+                      {assessmentsOpen ? 
+                        <ChevronDown className="w-4 h-4" /> : 
+                        <ChevronRight className="w-4 h-4" />
+                      }
+                    </>
+                  )}
+                </SidebarMenuButton>
+                {assessmentsOpen && !isCollapsed && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('intent-reviews')}
+                          className={`w-full ${getNavCls(activeTab === 'intent-reviews')}`}
+                        >
+                          <ClipboardList className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Intent Application Review</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-applications')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-applications')}`}
+                        >
+                          <FileText className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Applications</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-amalgamation')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-amalgamation')}`}
+                        >
+                          <GitMerge className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Amalgamation</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-amendments')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-amendments')}`}
+                        >
+                          <FileEdit className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Amendments</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-compliance')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-compliance')}`}
+                        >
+                          <ShieldCheck className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Compliance</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-enforcement')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-enforcement')}`}
+                        >
+                          <Gavel className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Enforcement</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-renewal')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-renewal')}`}
+                        >
+                          <RotateCw className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Renewal</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-surrender')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-surrender')}`}
+                        >
+                          <FileX className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Surrender</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-transfer')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-transfer')}`}
+                        >
+                          <ArrowRightLeft className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Transfer</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

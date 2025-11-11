@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Building, Activity } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building, Activity, FileCheck } from 'lucide-react';
 import { EntityDropdownSelector } from '@/components/public/EntityDropdownSelector';
+import { useEntityPermits } from '@/hooks/useEntityPermits';
 
 interface ProjectAndSpecificDetailsTabProps {
   formData: any;
@@ -15,6 +17,8 @@ const ProjectAndSpecificDetailsTab: React.FC<ProjectAndSpecificDetailsTabProps> 
   formData, 
   handleInputChange 
 }) => {
+  const { permits, loading: permitsLoading } = useEntityPermits(formData.entity_id);
+  
   return (
     <div className="space-y-6">
       {/* Project Overview */}
@@ -48,6 +52,67 @@ const ProjectAndSpecificDetailsTab: React.FC<ProjectAndSpecificDetailsTabProps> 
               console.log('Entity created successfully');
             }}
           />
+
+          {/* Existing Permit Selection */}
+          {formData.entity_id && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FileCheck className="w-4 h-4" />
+                Related Existing Permit (Optional)
+              </Label>
+              {permitsLoading ? (
+                <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground text-center">
+                  Loading permits...
+                </div>
+              ) : permits.length > 0 ? (
+                <div className="space-y-2 p-3 bg-background border rounded-lg max-h-48 overflow-y-auto">
+                  <div 
+                    onClick={() => handleInputChange('existing_permit_id', null)}
+                    className={`p-3 rounded-md cursor-pointer transition-colors ${
+                      !formData.existing_permit_id 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'hover:bg-muted/50'
+                    }`}
+                  >
+                    <span className="font-medium">None</span>
+                    <p className="text-xs opacity-80 mt-1">No existing permit</p>
+                  </div>
+                  {permits.map((permit) => (
+                    <div
+                      key={permit.id}
+                      onClick={() => handleInputChange('existing_permit_id', permit.id)}
+                      className={`p-3 rounded-md cursor-pointer transition-colors ${
+                        formData.existing_permit_id === permit.id 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{permit.title}</p>
+                          <p className="text-xs opacity-80 mt-1">
+                            {permit.permit_number || 'No permit number'} • {permit.permit_type}
+                          </p>
+                          {permit.approval_date && (
+                            <p className="text-xs opacity-70 mt-1">
+                              Approved: {new Date(permit.approval_date).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground text-center">
+                  No approved permits found for this entity
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Select an existing permit if this application is related to an amendment, renewal, or transfer
+              </p>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="applicationTitle">Application Title *</Label>

@@ -33,8 +33,10 @@ import PermitTransfer from "@/pages/permit-management/PermitTransfer";
 import PermitSurrender from "@/pages/permit-management/PermitSurrender";
 import ComplianceReports from "@/pages/permit-management/ComplianceReports";
 import PermitAmalgamation from "@/pages/permit-management/PermitAmalgamation";
+import PermitEnforcementInspections from "@/pages/permit-management/PermitEnforcementInspections";
 import EIAReviewDetail from "@/pages/eia/EIAReviewDetail";
 import RegistryApplicationDetail from "@/pages/RegistryApplicationDetail";
+import Inspections from "@/pages/Inspections";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -315,6 +317,20 @@ export const AppRoutes = () => {
       <Route path="/permit-surrender" element={<ProtectedRoute><PermitSurrender /></ProtectedRoute>} />
       <Route path="/compliance-reports" element={<ProtectedRoute><ComplianceReports /></ProtectedRoute>} />
       <Route path="/permit-amalgamation" element={<ProtectedRoute><PermitAmalgamation /></ProtectedRoute>} />
+      <Route path="/permit-management/enforcement-inspections" element={<ProtectedRoute><PermitEnforcementInspections /></ProtectedRoute>} />
+
+      {/* Compliance Routes */}
+      <Route 
+        path="/Inspections" 
+        element={
+          <RoleBasedRoute 
+            allowedRoles={['cepa_staff', 'admin', 'system_admin']}
+            allowedUnits={['compliance']}
+          >
+            <Inspections />
+          </RoleBasedRoute>
+        } 
+      />
 
       <Route 
         path="/eia-reviews/:id" 

@@ -17,6 +17,13 @@ import { AppSettings } from "@/components/public/AppSettings";
 import RegistryReports from "@/components/registry/RegistryReports";
 import { IntentApplicationReview } from "@/components/registry/IntentApplicationReview";
 import { PermitApplicationsList } from "@/components/registry/PermitApplicationsList";
+import { PermitRenewalReview } from "@/components/registry/PermitRenewalReview";
+import { PermitAmendmentReview } from "@/components/registry/PermitAmendmentReview";
+import { PermitTransferReview } from "@/components/registry/PermitTransferReview";
+import { PermitSurrenderReview } from "@/components/registry/PermitSurrenderReview";
+import { PermitAmalgamationReview } from "@/components/registry/PermitAmalgamationReview";
+import { PermitComplianceReview } from "@/components/registry/PermitComplianceReview";
+import { PermitEnforcementReview } from "@/components/registry/PermitEnforcementReview";
 
 const RegistryDashboard = () => {
   const { profile } = useAuth();
@@ -244,9 +251,15 @@ const RegistryDashboard = () => {
               </div>
             )}
 
-            {activeTab === 'assessments' && <InitialAssessmentsList />}
             {activeTab === 'intent-reviews' && <IntentApplicationReview />}
-            {activeTab === 'permit-reviews' && <PermitApplicationsList />}
+            {activeTab === 'permit-reviews' && <InitialAssessmentsList />}
+            {activeTab === 'permit-amalgamation' && <PermitAmalgamationReview />}
+            {activeTab === 'permit-amendments' && <PermitAmendmentReview />}
+            {activeTab === 'permit-compliance' && <PermitComplianceReview />}
+            {activeTab === 'permit-enforcement' && <PermitEnforcementReview />}
+            {activeTab === 'permit-renewal' && <PermitRenewalReview />}
+            {activeTab === 'permit-surrender' && <PermitSurrenderReview />}
+            {activeTab === 'permit-transfer' && <PermitTransferReview />}
             {activeTab === 'reports' && <RegistryReports />}
             {activeTab === 'team' && isManager && <TeamManagement />}
             {activeTab === 'profile' && <ProfileSettings />}

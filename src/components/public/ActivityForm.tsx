@@ -74,12 +74,9 @@ export function ActivityForm({ permitId, permitActivity, onSuccess, onCancel }: 
         activity_classification: formData.activity_classification,
         fee_category: formData.fee_category,
         calculated_fees: calculatedFees ? {
-          administrationFee: calculatedFees.administrationFee,
-          technicalFee: calculatedFees.technicalFee,
           totalFee: calculatedFees.totalFee,
           processingDays: calculatedFees.processingDays,
-          administrationForm: calculatedFees.administrationForm,
-          technicalForm: calculatedFees.technicalForm
+          administrationForm: calculatedFees.administrationForm
         } : null
       };
 

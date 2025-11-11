@@ -27,7 +27,14 @@ import {
   LogOut,
   ClipboardList,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  GitMerge,
+  FileEdit,
+  ShieldCheck,
+  Gavel,
+  RotateCw,
+  FileX,
+  ArrowRightLeft
 } from "lucide-react"
 import { useState } from "react"
 import { useUnitNotifications } from "@/hooks/useUnitNotifications"
@@ -42,7 +49,6 @@ interface RegistryNavigationItem {
 
 const registryNavigationItems: RegistryNavigationItem[] = [
   { title: "Dashboard", value: "dashboard", icon: LayoutDashboard },
-  { title: "Assessments", value: "assessments", icon: ClipboardList },
   { title: "Team Management", value: "team", icon: Users, managerOnly: true },
   { title: "Reports", value: "reports", icon: BarChart3 },
   { title: "Notifications", value: "notifications", icon: Bell },
@@ -165,7 +171,7 @@ export function RegistrySidebar({ activeTab, onTabChange }: RegistrySidebarProps
                         </button>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
+                <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
                         <button
                           onClick={() => onTabChange('permit-reviews')}
@@ -173,6 +179,83 @@ export function RegistrySidebar({ activeTab, onTabChange }: RegistrySidebarProps
                         >
                           <FileText className="w-4 h-4 shrink-0" />
                           <span className="ml-2">Permit Application Review</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-amalgamation')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-amalgamation')}`}
+                        >
+                          <GitMerge className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Amalgamation</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-amendments')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-amendments')}`}
+                        >
+                          <FileEdit className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Amendments</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-compliance')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-compliance')}`}
+                        >
+                          <ShieldCheck className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Compliance</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-enforcement')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-enforcement')}`}
+                        >
+                          <Gavel className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Enforcement</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-renewal')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-renewal')}`}
+                        >
+                          <RotateCw className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Renewal</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-surrender')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-surrender')}`}
+                        >
+                          <FileX className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Surrender</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button
+                          onClick={() => onTabChange('permit-transfer')}
+                          className={`w-full ${getNavCls(activeTab === 'permit-transfer')}`}
+                        >
+                          <ArrowRightLeft className="w-4 h-4 shrink-0" />
+                          <span className="ml-2">Permit Transfer</span>
                         </button>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>

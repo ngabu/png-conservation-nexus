@@ -21,6 +21,7 @@ export interface IntentDraft {
   landowner_negotiation_status: string | null;
   estimated_cost_kina: number | null;
   prescribed_activity_id: string | null;
+  existing_permit_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,7 +47,7 @@ export function useIntentDrafts(userId?: string) {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setDrafts(data || []);
+      setDrafts((data || []) as IntentDraft[]);
     } catch (error) {
       console.error('Error fetching drafts:', error);
       toast({
@@ -78,7 +79,7 @@ export function useIntentDrafts(userId?: string) {
 
         if (error) throw error;
 
-        setDrafts(prev => prev.map(d => d.id === draftId ? data : d));
+        setDrafts(prev => prev.map(d => d.id === draftId ? data as IntentDraft : d));
         
         toast({
           title: "Draft Updated",
@@ -100,7 +101,7 @@ export function useIntentDrafts(userId?: string) {
 
         if (error) throw error;
 
-        setDrafts(prev => [data, ...prev]);
+        setDrafts(prev => [data as IntentDraft, ...prev]);
         
         toast({
           title: "Draft Saved",

@@ -13,13 +13,13 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { RegistryActivityClassificationForm } from './RegistryActivityClassificationForm';
-import { RegistryPermitSpecificForm } from './RegistryPermitSpecificForm';
 import { RegistryFeeCalculationForm } from './RegistryFeeCalculationForm';
 import { EntityDetailsReadOnly } from '@/components/public/EntityDetailsReadOnly';
-import { ProjectAndSpecificDetailsReadOnly } from './read-only/ProjectAndSpecificDetailsReadOnly';
+import { ComprehensiveProjectDetailsReadOnly } from './read-only/ComprehensiveProjectDetailsReadOnly';
 import { LocationReadOnly } from './read-only/LocationReadOnly';
 import { DocumentsReadOnly } from './read-only/DocumentsReadOnly';
 import { ComplianceReadOnly } from './read-only/ComplianceReadOnly';
+import { ComprehensivePermitDetailsReadOnly } from './read-only/ComprehensivePermitDetailsReadOnly';
 import { createUserNotification } from '@/services/userNotificationsService';
 import { 
   ArrowLeft,
@@ -379,7 +379,7 @@ export function PermitApplicationReviewForm({ assessmentId: propAssessmentId }: 
             </TabsContent>
             
             <TabsContent value="project">
-              <ProjectAndSpecificDetailsReadOnly permit={application as any} />
+              <ComprehensiveProjectDetailsReadOnly application={application} />
             </TabsContent>
             
             <TabsContent value="location">
@@ -417,24 +417,7 @@ export function PermitApplicationReviewForm({ assessmentId: propAssessmentId }: 
             </TabsContent>
             
             <TabsContent value="specific">
-              <RegistryPermitSpecificForm 
-                data={application} 
-                onChange={async (updates) => {
-                  try {
-                    const { error } = await supabase
-                      .from('permit_applications')
-                      .update(updates)
-                      .eq('id', application.id);
-                    
-                    if (error) throw error;
-                    setApplication({ ...application, ...updates });
-                    toast({ title: "Permit Requirements Updated" });
-                  } catch (error) {
-                    console.error('Error updating requirements:', error);
-                    toast({ title: "Update Failed", variant: "destructive" });
-                  }
-                }}
-              />
+              <ComprehensivePermitDetailsReadOnly application={application} />
             </TabsContent>
             
             <TabsContent value="documents">

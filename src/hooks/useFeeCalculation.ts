@@ -67,7 +67,7 @@ export const useFeeCalculation = () => {
 
   const validateParameters = (params: FeeCalculationParams): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
-    const requiredFields = ['activityType', 'activitySubCategory', 'permitType', 'activityLevel'];
+    const requiredFields = ['activityType', 'activitySubCategory', 'activityLevel'];
     
     requiredFields.forEach(field => {
       if (!params[field as keyof FeeCalculationParams]) {
@@ -102,37 +102,30 @@ export const useFeeCalculation = () => {
       if (!activityId) {
         const { data: activityData } = await supabase
           .from('prescribed_activities')
-          .select('id')
+          .select('id, level, fee_category')
           .eq('category_type', params.activityType)
           .eq('sub_category', params.activitySubCategory || 'general')
           .eq('level', params.activityLevel === 'Level 1' ? 1 : params.activityLevel === 'Level 2' ? 2 : 3)
-          .limit(1);
+          .limit(1)
+          .single();
 
-        activityId = activityData?.[0]?.id;
+        activityId = activityData?.id;
       }
       
       if (!activityId) {
-        console.warn('No prescribed activity found, using fallback calculation');
-        return calculateFeesFallback(params);
+        toast({
+          title: "Activity Not Found",
+          description: "Could not find the prescribed activity. Please select a valid activity.",
+          variant: "destructive"
+        });
+        return null;
       }
 
-      // Calculate custom processing days based on various factors
-      let customProcessingDays = null;
-      if (params.durationYears) {
-        customProcessingDays = params.durationYears * 30;
-      }
-      if (params.projectCost && params.projectCost > 1000000) {
-        customProcessingDays = (customProcessingDays || 30) + 14; // Extra time for large projects
-      }
-      if (params.landArea && params.landArea > 5000) {
-        customProcessingDays = (customProcessingDays || 30) + 7; // Extra time for large areas
-      }
-
-      // Call Supabase function with comprehensive parameters
+      // Call Supabase function - processing days are now handled by the database function
       const { data, error } = await supabase.rpc('calculate_application_fee', {
         p_activity_id: activityId,
-        p_permit_type: params.permitType,
-        p_custom_processing_days: customProcessingDays
+        p_permit_type: null,
+        p_custom_processing_days: null // Let the database determine based on fee_category
       });
 
       if (error) {
@@ -141,56 +134,42 @@ export const useFeeCalculation = () => {
       }
 
       if (data === null || data === undefined) {
-        console.warn('No fee structure found in Supabase, attempting fallback');
-        return calculateFeesFallback(params);
+        toast({
+          title: "Fee Calculation Failed",
+          description: "No fee structure found for this activity. Please contact support.",
+          variant: "destructive"
+        });
+        return null;
       }
 
-      // Process Supabase response and apply modifiers based on additional parameters
-      let calculatedFee = typeof data === 'number' ? data : 0;
-      const baseFee = calculatedFee; // Store base fee before multipliers
+      // Use the database result directly - no client-side multipliers
+      const calculatedFee = typeof data === 'number' ? data : 0;
+
+      // Get processing days info for display
+      let processingDays = 30; // default
+      const activityData = await supabase
+        .from('prescribed_activities')
+        .select('level, fee_category')
+        .eq('id', activityId)
+        .single();
       
-      // Apply project cost multipliers
-      if (params.projectCost) {
-        if (params.projectCost > 5000000) {
-          calculatedFee *= 1.5; // 50% increase for major projects
-        } else if (params.projectCost > 1000000) {
-          calculatedFee *= 1.2; // 20% increase for large projects
+      if (activityData.data) {
+        if (activityData.data.level === 2) {
+          processingDays = activityData.data.fee_category === '2.1' ? 30 : 60;
+        } else if (activityData.data.level === 3) {
+          processingDays = 90;
         }
       }
-
-      // Apply land area multipliers
-      if (params.landArea) {
-        if (params.landArea > 10000) {
-          calculatedFee *= 1.3; // 30% increase for very large areas
-        } else if (params.landArea > 5000) {
-          calculatedFee *= 1.15; // 15% increase for large areas
-        }
-      }
-
-      // Apply ODS-specific fees
-      if (params.odsDetails?.quantity) {
-        calculatedFee += params.odsDetails.quantity * 100; // $100 per unit of ODS
-      }
-
-      // Apply waste-specific fees
-      if (params.wasteDetails?.quantity) {
-        calculatedFee += params.wasteDetails.quantity * 50; // $50 per unit of waste
-      }
-
-      const baseAdminFee = baseFee * 0.3;
-      const baseTechFee = baseFee * 0.7;
-      const adminFee = calculatedFee * 0.3; // Admin portion
-      const techFee = calculatedFee * 0.7; // Technical portion
 
       const result = {
-        administrationFee: Math.round(adminFee * 100) / 100,
-        technicalFee: Math.round(techFee * 100) / 100,
+        administrationFee: Math.round(calculatedFee * 100) / 100,
+        technicalFee: 0,
         totalFee: Math.round(calculatedFee * 100) / 100,
-        baseAdministrationFee: Math.round(baseAdminFee * 100) / 100,
-        baseTechnicalFee: Math.round(baseTechFee * 100) / 100,
-        processingDays: customProcessingDays || 30,
-        administrationForm: 'Official Administration Form',
-        technicalForm: 'Official Technical Form',
+        baseAdministrationFee: Math.round(calculatedFee * 100) / 100,
+        baseTechnicalFee: 0,
+        processingDays,
+        administrationForm: 'Form 2',
+        technicalForm: 'N/A',
         isEstimated: false,
         source: 'official' as const
       };
@@ -202,11 +181,11 @@ export const useFeeCalculation = () => {
             p_permit_application_id: permitApplicationId,
             p_calculation_method: 'calculate_application_fee',
             p_parameters: params as any,
-            p_administration_fee: result.administrationFee,
-            p_technical_fee: result.technicalFee,
+            p_administration_fee: result.totalFee,
+            p_technical_fee: 0,
             p_total_fee: result.totalFee,
             p_is_official: true,
-            p_notes: 'Calculated using database function'
+            p_notes: 'Calculated using official 2018 Environment Act Fees formula: (Annual Recurrent Fee ÷ 365) × Processing Days'
           });
         } catch (logError) {
           console.error('Failed to log calculation:', logError);
@@ -219,173 +198,26 @@ export const useFeeCalculation = () => {
     } catch (error) {
       console.error('Error calculating fees with Supabase:', error);
       
-      // Show error and attempt fallback
       toast({
         title: "Fee Calculation Error",
-        description: "Unable to fetch official fees, using estimated calculation",
-        variant: "default"
+        description: "Unable to calculate fees. Please ensure all required fields are filled.",
+        variant: "destructive"
       });
       
-      return calculateFeesFallback(params);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateFeesFallback = (params: FeeCalculationParams): CalculatedFees | null => {
-    // Fallback to client-side calculation using existing logic
-    const feeStructure = feeStructures.find(
-      (fs) =>
-        fs.activity_type.toLowerCase() === params.activityType.toLowerCase() ||
-        fs.permit_type.toLowerCase() === params.permitType.toLowerCase()
-    );
-
-    if (!feeStructure) {
-      // Start with base fees from database function defaults or use minimal base
-      let baseAdminFee = 500;  // Minimal base - will be multiplied by activity level
-      let baseTechFee = 5000;  // Minimal base - will be multiplied by activity level
-      
-      // Apply activity level multipliers (primary fee determinant)
-      if (params.activityLevel) {
-        if (params.activityLevel.includes('Level 3')) {
-          baseAdminFee *= 4.0;  // Level 3 = K2,000 admin base
-          baseTechFee *= 6.0;   // Level 3 = K30,000 tech base
-        } else if (params.activityLevel.includes('Level 2')) {
-          baseAdminFee *= 2.5;  // Level 2 = K1,250 admin base
-          baseTechFee *= 3.5;   // Level 2 = K17,500 tech base
-        } else {
-          baseAdminFee *= 1.5;  // Level 1 = K750 admin base
-          baseTechFee *= 2.0;   // Level 1 = K10,000 tech base
-        }
-      }
-      
-      // Apply permit type multipliers
-      if (params.permitType) {
-        if (params.permitType.toLowerCase().includes('waste')) {
-          baseTechFee *= 1.2; // 20% increase for waste permits
-        } else if (params.permitType.toLowerCase().includes('air')) {
-          baseTechFee *= 1.3; // 30% increase for air permits
-        } else if (params.permitType.toLowerCase().includes('water')) {
-          baseTechFee *= 1.1; // 10% increase for water permits
-        }
-      }
-      
-      // Apply additional fees only if parameters exist
-      if (params.projectCost && params.projectCost > 0) {
-        if (params.projectCost > 5000000) {
-          baseAdminFee *= 1.8;
-          baseTechFee *= 1.6;
-        } else if (params.projectCost > 1000000) {
-          baseAdminFee *= 1.4;
-          baseTechFee *= 1.3;
-        } else if (params.projectCost > 100000) {
-          baseAdminFee *= 1.2;
-          baseTechFee *= 1.15;
-        }
-      }
-      
-      if (params.landArea && params.landArea > 0) {
-        if (params.landArea > 10000) {
-          baseAdminFee *= 1.3;
-          baseTechFee *= 1.2;
-        } else if (params.landArea > 5000) {
-          baseAdminFee *= 1.15;
-          baseTechFee *= 1.1;
-        }
-      }
-      
-      if (params.durationYears && params.durationYears > 1) {
-        baseAdminFee *= (1 + (params.durationYears - 1) * 0.05); // 5% per additional year
-      }
-      
-      // Add specific fees for special parameters
-      if (params.odsDetails?.quantity && params.odsDetails.quantity > 0) {
-        baseTechFee += params.odsDetails.quantity * 200;
-      }
-      
-      if (params.wasteDetails?.quantity && params.wasteDetails.quantity > 0) {
-        baseTechFee += params.wasteDetails.quantity * 150;
-      }
-      
-      const totalCalculated = Math.round((baseAdminFee + baseTechFee) * 100) / 100;
-      
-      toast({
-        title: "Calculated from Application Parameters",
-        description: `Based on ${params.activityLevel} and ${params.permitType}: K${totalCalculated.toLocaleString()}`,
-        variant: "default"
-      });
-
-      // Calculate base fees before multipliers for display
-      let baseAdmin = 500;
-      let baseTech = 5000;
-      
-      if (params.activityLevel) {
-        if (params.activityLevel.includes('Level 3')) {
-          baseAdmin *= 4.0;
-          baseTech *= 6.0;
-        } else if (params.activityLevel.includes('Level 2')) {
-          baseAdmin *= 2.5;
-          baseTech *= 3.5;
-        } else {
-          baseAdmin *= 1.5;
-          baseTech *= 2.0;
-        }
-      }
-
-      return {
-        administrationFee: Math.round(baseAdminFee * 100) / 100,
-        technicalFee: Math.round(baseTechFee * 100) / 100,
-        totalFee: totalCalculated,
-        baseAdministrationFee: Math.round(baseAdmin * 100) / 100,
-        baseTechnicalFee: Math.round(baseTech * 100) / 100,
-        processingDays: 30 + (params.durationYears ? (params.durationYears - 1) * 3 : 0),
-        administrationForm: `${params.activityLevel} Administration Form`,
-        technicalForm: `${params.permitType} Technical Form`,
-        isEstimated: true,
-        source: 'estimated'
-      };
-    }
-
-    // Use found fee structure
-    const administrationFee = (feeStructure.annual_recurrent_fee / 365) * feeStructure.base_processing_days;
-    const technicalFee = feeStructure.work_plan_amount;
-    const totalFee = administrationFee + technicalFee;
-
-    toast({
-      title: "Using Estimated Fees", 
-      description: "No official fee structure found - using closest match calculations",
-      variant: "default"
-    });
-
-    return {
-      administrationFee: Math.round(administrationFee * 100) / 100,
-      technicalFee: technicalFee,
-      totalFee: Math.round(totalFee * 100) / 100,
-      baseAdministrationFee: Math.round(administrationFee * 100) / 100,
-      baseTechnicalFee: technicalFee,
-      processingDays: feeStructure.base_processing_days,
-      administrationForm: feeStructure.administration_form,
-      technicalForm: feeStructure.technical_form,
-      isEstimated: true,
-      source: 'estimated'
-    };
-  };
-
-  // Legacy method for backward compatibility
+  // Legacy method - now deprecated, use calculateFeesWithSupabase instead
   const calculateFees = (
     activityType: string,
     permitType: string,
     feeCategory: string = 'Green Category'
   ): CalculatedFees | null => {
-    const params: FeeCalculationParams = {
-      activityType,
-      activitySubCategory: 'general',
-      permitType,
-      activityLevel: permitType
-    };
-    
-    // For legacy calls, use synchronous fallback
-    return calculateFeesFallback(params);
+    console.warn('calculateFees is deprecated. Use calculateFeesWithSupabase instead.');
+    return null;
   };
 
   const getPermitTypes = () => ['Level 1', 'Level 2', 'Level 3'];

@@ -108,24 +108,10 @@ export const FeeCalculationCard: React.FC<FeeCalculationCardProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-3 bg-muted/30 rounded-lg">
-            <div className="text-sm text-muted-foreground mb-1">Administration Fee</div>
-            <div className="text-lg font-semibold">{formatCurrency(fees.administrationFee)}</div>
-            <div className="text-xs text-muted-foreground">Form: {fees.administrationForm || 'TBD'}</div>
-          </div>
-          
-          <div className="p-3 bg-muted/30 rounded-lg">
-            <div className="text-sm text-muted-foreground mb-1">Technical Fee</div>
-            <div className="text-lg font-semibold">{formatCurrency(fees.technicalFee)}</div>
-            <div className="text-xs text-muted-foreground">Form: {fees.technicalForm || 'TBD'}</div>
-          </div>
-        </div>
-
         <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-muted-foreground">Total Fee</div>
+              <div className="text-sm text-muted-foreground">Application Fee</div>
               <div className="text-2xl font-bold text-primary">{formatCurrency(fees.totalFee)}</div>
             </div>
             <div className="text-right">
@@ -141,11 +127,10 @@ export const FeeCalculationCard: React.FC<FeeCalculationCardProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <FileText className="w-4 h-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Required Forms:</span>
+            <span className="text-muted-foreground">Required Form:</span>
           </div>
           <div className="pl-6 space-y-1">
-            <div className="text-sm">• {fees.administrationForm || 'TBD'} (Administration)</div>
-            <div className="text-sm">• {fees.technicalForm || 'TBD'} (Technical)</div>
+            <div className="text-sm">• {fees.administrationForm || 'Form 2'}</div>
           </div>
         </div>
 
