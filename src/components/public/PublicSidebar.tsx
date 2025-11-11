@@ -23,7 +23,6 @@ import {
   CreditCard, 
   Bell, 
   Upload,
-  TreePine,
   User,
   Cog,
   LogOut,
@@ -40,6 +39,7 @@ import {
 } from "lucide-react"
 import { useUserNotifications } from "@/hooks/useUserNotifications"
 import { useAuth } from "@/contexts/AuthContext"
+import pngEmblem from "@/assets/png-emblem.png"
 
 interface PublicNavigationItem {
   title: string
@@ -130,8 +130,8 @@ export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
         {/* Branding */}
         <div className="p-6 pb-8 bg-primary-glow/90 backdrop-blur-xl rounded-br-[4rem] mb-4 shadow-glow">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-glow-accent">
-              <TreePine className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-glow-accent p-1">
+              <img src={pngEmblem} alt="PNG Emblem" className="w-full h-full object-contain" />
             </div>
             {!isCollapsed && (
               <div>
