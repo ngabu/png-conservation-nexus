@@ -22,9 +22,9 @@
     --popover-foreground: 0 0% 15%;
 
     /* Primary - PNG Green (from national colors) */
-    --primary: 145 65% 35%;
+    --primary: 145 65% 25%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 145 60% 45%;
+    --primary-glow: 145 60% 32%;
 
     /* Secondary - Neutral gray */
     --secondary: 0 0% 90%;
@@ -39,7 +39,7 @@
     --accent-foreground: 0 0% 100%;
 
     /* Status colors */
-    --success: 145 65% 40%;
+    --success: 145 65% 30%;
     --success-foreground: 0 0% 100%;
     --warning: 45 80% 62%;
     --warning-foreground: 0 0% 15%;
@@ -58,16 +58,16 @@
     /* Sidebar colors - Dark charcoal like PNG government style */
     --sidebar-background: 0 0% 12%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 145 65% 45%;
+    --sidebar-primary: 145 65% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 20%;
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 145 65% 45%;
+    --sidebar-ring: 145 65% 28%;
 
     /* Custom gradients - PNG theme */
-    --gradient-primary: linear-gradient(135deg, hsl(145 65% 35%), hsl(145 60% 45%));
-    --gradient-success: linear-gradient(135deg, hsl(145 65% 40%), hsl(160 60% 45%));
+    --gradient-primary: linear-gradient(135deg, hsl(145 65% 25%), hsl(145 60% 32%));
+    --gradient-success: linear-gradient(135deg, hsl(145 65% 30%), hsl(160 60% 35%));
     --gradient-accent: linear-gradient(135deg, hsl(20 55% 65%), hsl(35 50% 68%));
     --gradient-government: linear-gradient(180deg, hsl(0 0% 12%), hsl(0 0% 18%), hsl(0 0% 15%));
     
@@ -79,9 +79,9 @@
     --glass-shadow-soft: 0 2px 10px 0 hsl(0 0% 0% / 0.05);
     
     /* Shadows and glows */
-    --shadow-primary: 0 2px 12px hsl(145 65% 35% / 0.15);
+    --shadow-primary: 0 2px 12px hsl(145 65% 25% / 0.15);
     --shadow-card: 0 4px 20px 0 hsl(0 0% 0% / 0.08);
-    --glow-primary: 0 0 20px hsl(145 65% 45% / 0.25);
+    --glow-primary: 0 0 20px hsl(145 65% 32% / 0.25);
     --glow-accent: 0 0 16px hsl(20 55% 65% / 0.2);
   }
 
@@ -147,12 +147,21 @@
 
 /* Print Styles for PDF Export */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm 2cm;
+  }
+  
   body {
     background: white !important;
     background-image: none !important;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #000;
   }
 
-  .no-print {
+  .no-print,
+  [class*="print\\:hidden"] {
     display: none !important;
   }
 
@@ -163,8 +172,21 @@
   footer,
   button:not(.print-visible),
   [role="navigation"],
-  [role="complementary"] {
+  [role="complementary"],
+  .sidebar,
+  [data-sidebar] {
     display: none !important;
+  }
+
+  /* Hide interactive card content during print */
+  [data-print-hide="true"] {
+    display: none !important;
+  }
+
+  /* Show print-only content */
+  .print-section,
+  [class*="print\\:block"] {
+    display: block !important;
   }
 
   /* Ensure content fits on page */
@@ -174,15 +196,27 @@
   }
 
   /* Page breaks */
-  .page-break {
+  .page-break,
+  .print\:break-before-page {
     page-break-before: always;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+  
+  table, figure {
+    page-break-inside: avoid;
   }
 
   /* Card styling for print */
   .bg-glass,
-  .backdrop-blur-sm {
+  .backdrop-blur-sm,
+  [class*="bg-glass"] {
     background: white !important;
     backdrop-filter: none !important;
+    border: none !important;
   }
 
   /* Ensure text is readable */
@@ -194,30 +228,60 @@
     color: #000 !important;
   }
 
-  /* Badge styling for print */
-  .badge {
-    border: 1px solid #333 !important;
-  }
-
   /* Remove shadows for cleaner print */
   * {
     box-shadow: none !important;
   }
 
-  /* Optimize spacing for print */
-  .space-y-6 > * + * {
-    margin-top: 1rem !important;
+  /* Print section styling */
+  .print-section {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #d1d5db;
+    max-width: 100%;
+    overflow: hidden;
   }
 
-  /* Ensure tables and grids display properly */
-  table,
-  .grid {
-    page-break-inside: auto;
+  .print-section:last-child {
+    border-bottom: none;
   }
 
-  tr,
-  .grid > * {
-    page-break-inside: avoid;
-    page-break-after: auto;
+  .print-section-title {
+    font-size: 12pt;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.25rem;
+  }
+
+  .print-field {
+    margin-bottom: 0.5rem;
+  }
+
+  .print-field-label {
+    font-weight: 500;
+    color: #6b7280;
+    font-size: 9pt;
+    margin-bottom: 0.25rem;
+  }
+
+  .print-field-value {
+    color: #111827;
+    font-size: 10pt;
+    background-color: #f3f4f6;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  /* Grid layout for print */
+  .grid.grid-cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
   }
 }

@@ -1,5 +1,6 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,18 +31,19 @@ interface Permit {
 
 interface PermitManagementProps {
   onNavigateToNewApplication?: () => void;
+  onNavigateToEditApplication?: (permitId: string) => void;
 }
 
-export function PermitManagement({ onNavigateToNewApplication }: PermitManagementProps) {
+export function PermitManagement({ onNavigateToNewApplication, onNavigateToEditApplication }: PermitManagementProps) {
   const [permits, setPermits] = useState<Permit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedPermit, setSelectedPermit] = useState<Permit | null>(null);
   const [selectedPermitForPreview, setSelectedPermitForPreview] = useState<Permit | null>(null);
   const [showActivities, setShowActivities] = useState(false);
-  const [editingPermitId, setEditingPermitId] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchPermits = async () => {
     if (!user) return;
@@ -86,19 +88,20 @@ export function PermitManagement({ onNavigateToNewApplication }: PermitManagemen
   };
 
   const handleEditApplication = (permit: Permit) => {
-    setEditingPermitId(permit.id);
-    setShowForm(true);
+    if (onNavigateToEditApplication) {
+      onNavigateToEditApplication(permit.id);
+    } else {
+      navigate(`/edit-permit/${permit.id}`);
+    }
   };
 
   const handleFormSuccess = () => {
     setShowForm(false);
-    setEditingPermitId(null);
     fetchPermits();
   };
 
   const handleFormCancel = () => {
     setShowForm(false);
-    setEditingPermitId(null);
   };
 
   const handleDeleteApplication = async (permit: Permit) => {
@@ -158,18 +161,6 @@ export function PermitManagement({ onNavigateToNewApplication }: PermitManagemen
           <Plus className="w-4 h-4 mr-2" />
           New Application
         </Button>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Application</DialogTitle>
-            </DialogHeader>
-            <ComprehensivePermitForm
-              permitId={editingPermitId || undefined}
-              onSuccess={handleFormSuccess}
-              onCancel={handleFormCancel}
-            />
-          </DialogContent>
-        </Dialog>
       </div>
 
       {permits.length === 0 ? (
@@ -203,9 +194,8 @@ export function PermitManagement({ onNavigateToNewApplication }: PermitManagemen
               </TableHeader>
               <TableBody>
                 {permits.map((permit) => (
-                  <>
+                  <React.Fragment key={permit.id}>
                     <TableRow 
-                      key={permit.id} 
                       className={`cursor-pointer transition-colors ${
                         selectedPermitForPreview?.id === permit.id 
                           ? 'bg-accent hover:bg-accent/90' 
@@ -298,7 +288,7 @@ export function PermitManagement({ onNavigateToNewApplication }: PermitManagemen
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>

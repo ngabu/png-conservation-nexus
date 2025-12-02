@@ -33,6 +33,8 @@ interface IntentRegistration {
   reviewed_at: string | null;
   official_feedback_attachments: any[] | null;
   project_site_address: string | null;
+  district: string | null;
+  province: string | null;
   project_site_description: string | null;
   site_ownership_details: string | null;
   government_agreement: string | null;
@@ -58,6 +60,18 @@ interface Document {
   file_size: number;
 }
 
+interface EntityDetails {
+  id: string;
+  name: string;
+  entity_type: string;
+  'registered address'?: string;
+  postal_address?: string;
+  email?: string;
+  phone?: string;
+  district?: string;
+  province?: string;
+}
+
 export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistrationReviewFormProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -70,6 +84,7 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
   const [uploading, setUploading] = useState(false);
   const [feedbackFiles, setFeedbackFiles] = useState<File[]>([]);
   const [reviewerName, setReviewerName] = useState<string>('');
+  const [entityDetails, setEntityDetails] = useState<EntityDetails | null>(null);
 
   useEffect(() => {
     fetchIntentDetails();
@@ -102,6 +117,19 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
       setIntent(typedIntent);
       setReviewNotes(data.review_notes || '');
       setReviewStatus(data.status);
+
+      // Fetch entity details
+      if (data.entity_id) {
+        const { data: entityData, error: entityError } = await supabase
+          .from('entities')
+          .select('*')
+          .eq('id', data.entity_id)
+          .maybeSingle();
+
+        if (!entityError && entityData) {
+          setEntityDetails(entityData);
+        }
+      }
 
       // Fetch reviewer name if reviewed_by exists
       if (data.reviewed_by) {
@@ -173,7 +201,29 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
   };
 
   const handleExportPDF = () => {
-    window.print();
+    // Wait briefly to ensure content is ready, then print
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
+  // Get entity address for PDF
+  const getEntityAddress = () => {
+    if (entityDetails) {
+      const parts = [
+        entityDetails['registered address'],
+        entityDetails.district,
+        entityDetails.province
+      ].filter(Boolean);
+      return parts.length > 0 ? parts.join(', ') : 'N/A';
+    }
+    return 'N/A';
+  };
+
+  // Get attachment list for PDF
+  const getAttachmentList = () => {
+    if (documents.length === 0) return 'No attachments';
+    return documents.map(doc => doc.filename).join(', ');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -367,7 +417,191 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      {/* Print-only A4 formatted content */}
+      <div className="hidden print:block print:mb-6 print:max-w-full">
+        {/* Header with PNG Emblem and Authority Name */}
+        <div className="text-center mb-8">
+          <img 
+            src="/images/png-emblem.png" 
+            alt="Papua New Guinea Emblem" 
+            className="mx-auto h-24 mb-4"
+          />
+          <h1 className="text-xl font-bold text-gray-800">Conservation & Environment Protection Authority</h1>
+          <p className="text-base text-gray-600">CEPA Registry Division</p>
+        </div>
+
+        {/* Title */}
+        <h2 className="text-lg font-bold mb-4 break-words">{`Intent Registration Record - ${intent.entity?.name || 'Unknown Entity'}`}</h2>
+
+        {/* Date */}
+        <div className="mb-3">
+          <span className="font-bold">Date:</span>
+          <span className="ml-2">{new Date(intent.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        </div>
+
+        {/* Address and Attachment Ref side by side */}
+        <div className="flex gap-8 mb-6">
+          <div className="flex items-start flex-1 min-w-0">
+            <span className="font-bold mr-4 flex-shrink-0">Address:</span>
+            <div className="border border-gray-400 p-3 flex-1 min-h-[60px]">
+              <p className="text-sm break-words">{getEntityAddress()}</p>
+            </div>
+          </div>
+          <div className="flex items-start flex-1 min-w-0">
+            <span className="font-bold mr-4 flex-shrink-0">Attachment Ref:</span>
+            <div className="border border-gray-400 p-3 flex-1 min-h-[60px]">
+              <p className="text-sm break-words">{getAttachmentList()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Registration Details - Print */}
+        <div className="print-section">
+          <h3 className="print-section-title">Registration Details</h3>
+          {intent.prescribed_activity_id && (
+            <div className="print-field mt-2">
+              <p className="print-field-label">Prescribed Activity</p>
+              <p className="print-field-value break-all">{intent.prescribed_activity_id}</p>
+            </div>
+          )}
+          <div className="print-field mt-2">
+            <p className="print-field-label">Activity Description</p>
+            <p className="print-field-value whitespace-pre-wrap break-words">{intent.activity_description}</p>
+          </div>
+          <div className="print-field mt-2">
+            <p className="print-field-label">Preparatory Work Description</p>
+            <p className="print-field-value whitespace-pre-wrap break-words">{intent.preparatory_work_description}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            <div className="print-field">
+              <p className="print-field-label">Commencement Date</p>
+              <p className="print-field-value">{new Date(intent.commencement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+            <div className="print-field">
+              <p className="print-field-label">Completion Date</p>
+              <p className="print-field-value">{new Date(intent.completion_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Site Information - Print */}
+        {(intent.project_site_address || intent.district || intent.province || intent.project_site_description || intent.site_ownership_details) && (
+          <div className="print-section">
+            <h3 className="print-section-title">Project Site Information</h3>
+            {intent.project_site_address && (
+              <div className="print-field">
+                <p className="print-field-label">Project Site Address</p>
+                <p className="print-field-value break-words">{intent.project_site_address}</p>
+              </div>
+            )}
+            {(intent.district || intent.province) && (
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="print-field">
+                  <p className="print-field-label">District</p>
+                  <p className="print-field-value break-words">{intent.district || 'Not provided'}</p>
+                </div>
+                <div className="print-field">
+                  <p className="print-field-label">Province</p>
+                  <p className="print-field-value break-words">{intent.province || 'Not provided'}</p>
+                </div>
+              </div>
+            )}
+            {intent.project_site_description && (
+              <div className="print-field mt-2">
+                <p className="print-field-label">Site Description</p>
+                <p className="print-field-value whitespace-pre-wrap break-words">{intent.project_site_description}</p>
+              </div>
+            )}
+            {intent.site_ownership_details && (
+              <div className="print-field mt-2">
+                <p className="print-field-label">Site Ownership Details</p>
+                <p className="print-field-value whitespace-pre-wrap break-words">{intent.site_ownership_details}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Government & Stakeholder Engagement - Print */}
+        {(intent.government_agreement || intent.departments_approached || intent.approvals_required || intent.landowner_negotiation_status) && (
+          <div className="print-section">
+            <h3 className="print-section-title">Government & Stakeholder Engagement</h3>
+            {intent.government_agreement && (
+              <div className="print-field">
+                <p className="print-field-label">Agreement with Government of PNG</p>
+                <p className="print-field-value whitespace-pre-wrap break-words">{intent.government_agreement}</p>
+              </div>
+            )}
+            {intent.departments_approached && (
+              <div className="print-field mt-2">
+                <p className="print-field-label">Departments/Statutory Bodies Approached</p>
+                <p className="print-field-value whitespace-pre-wrap break-words">{intent.departments_approached}</p>
+              </div>
+            )}
+            {intent.approvals_required && (
+              <div className="print-field mt-2">
+                <p className="print-field-label">Other Formal Government Approvals Required</p>
+                <p className="print-field-value whitespace-pre-wrap break-words">{intent.approvals_required}</p>
+              </div>
+            )}
+            {intent.landowner_negotiation_status && (
+              <div className="print-field mt-2">
+                <p className="print-field-label">Landowner Negotiation Status</p>
+                <p className="print-field-value whitespace-pre-wrap break-words">{intent.landowner_negotiation_status}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Financial Information - Print */}
+        {intent.estimated_cost_kina && (
+          <div className="print-section">
+            <h3 className="print-section-title">Project Financial Information</h3>
+            <div className="print-field">
+              <p className="print-field-label">Estimated Cost of Works</p>
+              <p className="print-field-value font-medium">
+                K{intent.estimated_cost_kina.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Supporting Documents - Print */}
+        <div className="print-section">
+          <h3 className="print-section-title">Supporting Documents</h3>
+          {documents.length === 0 ? (
+            <p className="text-sm">No documents attached</p>
+          ) : (
+            <ul className="list-disc list-inside text-sm space-y-1">
+              {documents.map((doc) => (
+                <li key={doc.id} className="break-words">{doc.filename}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Official Feedback - Print */}
+        <div className="print-section">
+          <h3 className="print-section-title">Official Feedback from CEPA</h3>
+          {intent.status !== 'pending' && intent.review_notes ? (
+            <>
+              {intent.reviewed_at && (
+                <p className="text-sm text-gray-600 mb-2">
+                  Reviewed on {new Date(intent.reviewed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  {reviewerName && ` by ${reviewerName}`}
+                </p>
+              )}
+              <div className="print-field">
+                <p className="print-field-label">Feedback Notes</p>
+                <p className="print-field-value whitespace-pre-wrap break-words">{intent.review_notes}</p>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500 italic">No official feedback provided yet.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 print:hidden">
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to List
@@ -380,7 +614,7 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
         </Badge>
       </div>
 
-      <Tabs defaultValue="details" className="w-full">
+      <Tabs defaultValue="details" className="w-full print:hidden">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="details">Registration Details</TabsTrigger>
           <TabsTrigger value="feedback">Registry Feedback</TabsTrigger>
@@ -733,23 +967,25 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
                 )}
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t border-glass">
+              <div className="flex justify-end gap-3 pt-6 border-t border-glass">
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => {
                     setReviewNotes(intent.review_notes || '');
                     setReviewStatus(intent.status);
                     setFeedbackFiles([]);
                   }}
+                  className="w-32"
                 >
-                  Reset
+                  Save Draft
                 </Button>
                 <Button
                   onClick={handleReviewSubmit}
                   disabled={submitting || !reviewStatus || !reviewNotes.trim()}
+                  className="w-40"
                 >
                   <Send className="w-4 h-4 mr-2" />
-                  {submitting ? 'Submitting...' : 'Submit Review & Notify'}
+                  {submitting ? 'Submitting...' : 'Submit Review'}
                 </Button>
               </div>
             </CardContent>

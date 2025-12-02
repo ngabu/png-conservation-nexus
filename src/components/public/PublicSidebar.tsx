@@ -35,7 +35,9 @@ import {
   AlertTriangle,
   RefreshCw,
   UserX,
-  ArrowRightLeft
+  ArrowRightLeft,
+  FileCheck,
+  Activity
 } from "lucide-react"
 import { useUserNotifications } from "@/hooks/useUserNotifications"
 import { useAuth } from "@/contexts/AuthContext"
@@ -50,6 +52,7 @@ interface PublicNavigationItem {
 
 const publicNavigationItems: PublicNavigationItem[] = [
   { title: "Dashboard", value: "dashboard", icon: LayoutDashboard },
+  { title: "Activity Overview", value: "activity-overview", icon: Activity },
   { title: "Entities", value: "entities", icon: Building2 },
   { 
     title: "Intent Registration", 
@@ -76,7 +79,16 @@ const publicNavigationItems: PublicNavigationItem[] = [
       { title: "Permit Transfer", value: "permit-transfer", icon: ArrowRightLeft },
     ]
   },
-  { title: "Invoices", value: "invoices", icon: CreditCard },
+  { 
+    title: "Invoices", 
+    value: "invoices", 
+    icon: CreditCard,
+    subItems: [
+      { title: "Invoice Management", value: "invoices", icon: CreditCard },
+      { title: "Payment Summary", value: "payment-summary", icon: FileText },
+    ]
+  },
+  { title: "Compliance Reporting", value: "compliance-reporting", icon: FileCheck },
   { title: "Notifications", value: "notifications", icon: Bell },
   { title: "Documents", value: "documents", icon: Upload },
 ]
@@ -94,7 +106,7 @@ interface PublicSidebarProps {
 export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
   const { user, signOut } = useAuth()
   const { unreadCount } = useUserNotifications(user?.id)
-  const { state, isMobile } = useSidebar()
+  const { state, isMobile, setOpenMobile } = useSidebar()
   const [openMenus, setOpenMenus] = useState<string[]>([])
 
   const handleSignOut = async () => {
@@ -103,6 +115,14 @@ export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
       window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  const handleTabChange = (tab: string) => {
+    onTabChange(tab);
+    // Auto-hide sidebar on mobile after selection
+    if (isMobile) {
+      setOpenMobile(false);
     }
   };
 
@@ -123,7 +143,7 @@ export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
 
   return (
     <Sidebar
-      className="w-64 border-r border-white/30 bg-primary/95 backdrop-blur-2xl shadow-xl"
+      className="border-r border-white/30 bg-primary/95 backdrop-blur-2xl shadow-xl"
       collapsible="icon"
     >
       <SidebarContent className="p-0 bg-gradient-to-b from-primary/90 to-primary/80 backdrop-blur-2xl">
@@ -172,7 +192,7 @@ export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
                               <SidebarMenuSubItem key={subItem.value}>
                                 <SidebarMenuSubButton asChild>
                                   <button
-                                    onClick={() => onTabChange(subItem.value)}
+                                    onClick={() => handleTabChange(subItem.value)}
                                     className={`w-full ${getNavCls(activeTab === subItem.value)}`}
                                   >
                                     <subItem.icon className="w-4 h-4 shrink-0" />
@@ -188,7 +208,7 @@ export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
                   ) : (
                     <SidebarMenuButton asChild>
                       <button
-                        onClick={() => onTabChange(item.value)}
+                        onClick={() => handleTabChange(item.value)}
                         className={`w-full ${getNavCls(activeTab === item.value)}`}
                       >
                         <item.icon className="w-5 h-5 shrink-0" />
@@ -219,7 +239,7 @@ export function PublicSidebar({ activeTab, onTabChange }: PublicSidebarProps) {
                   <SidebarMenuItem key={item.value}>
                     <SidebarMenuButton asChild>
                       <button
-                        onClick={() => onTabChange(item.value)}
+                        onClick={() => handleTabChange(item.value)}
                         className={`w-full ${getNavCls(activeTab === item.value)}`}
                       >
                         <item.icon className="w-5 h-5 shrink-0" />

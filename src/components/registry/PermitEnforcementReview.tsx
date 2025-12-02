@@ -138,20 +138,29 @@ export function PermitEnforcementReview() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-card-foreground">Permit Enforcement Reviews</h2>
-        <p className="text-muted-foreground">Review enforcement actions and permit holder responses</p>
-      </div>
-
-      {/* Enforcement Actions List */}
+    <>
       <Card>
         <CardHeader>
-          <CardTitle>Active Enforcement Actions</CardTitle>
+          <CardTitle className="flex items-center">
+            <Gavel className="w-5 h-5 mr-2" />
+            Permit Enforcement Reviews ({enforcementActions.length})
+          </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Review enforcement actions and permit holder responses
+          </p>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {enforcementActions.map((action) => (
+        <CardContent className="space-y-4">
+          {enforcementActions.length === 0 ? (
+            <div className="text-center py-12">
+              <Gavel className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No enforcement actions</h3>
+              <p className="text-muted-foreground">
+                No enforcement actions are currently active.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {enforcementActions.map((action) => (
               <div
                 key={action.id}
                 onClick={() => setSelectedAction(action.id)}
@@ -187,6 +196,7 @@ export function PermitEnforcementReview() {
               </div>
             ))}
           </div>
+        )}
         </CardContent>
       </Card>
 
@@ -328,7 +338,7 @@ export function PermitEnforcementReview() {
           </Card>
 
           {/* Registry Review Section */}
-          <Card>
+          <Card className="bg-accent/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Gavel className="w-5 h-5 text-primary" />
@@ -364,19 +374,19 @@ export function PermitEnforcementReview() {
                 />
               </div>
 
-              <div className="flex gap-4">
-                <Button onClick={handleSubmitReview} className="flex-1">
+              <div className="flex gap-3 justify-end">
+                <Button variant="secondary" className="w-32">
+                  Save Draft
+                </Button>
+                <Button onClick={handleSubmitReview} className="w-40">
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Submit Review
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  Save Draft
                 </Button>
               </div>
             </CardContent>
           </Card>
         </>
       )}
-    </div>
+    </>
   );
 }

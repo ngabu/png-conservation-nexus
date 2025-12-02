@@ -47,19 +47,29 @@ export function PermitAmendmentReview() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-card-foreground">Permit Amendment Reviews</h2>
-        <p className="text-muted-foreground">Review and assess permit amendment requests</p>
-      </div>
-
+    <>
       <Card>
         <CardHeader>
-          <CardTitle>Pending Amendment Requests</CardTitle>
+          <CardTitle className="flex items-center">
+            <Edit className="w-5 h-5 mr-2" />
+            Permit Amendment Reviews ({amendmentRequests.length})
+          </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Review and assess permit amendment requests
+          </p>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {amendmentRequests.map((request) => (
+        <CardContent className="space-y-4">
+          {amendmentRequests.length === 0 ? (
+            <div className="text-center py-12">
+              <Edit className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No amendment requests</h3>
+              <p className="text-muted-foreground">
+                No amendment requests have been submitted yet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {amendmentRequests.map((request) => (
               <div
                 key={request.id}
                 onClick={() => setSelectedRequest(request.id)}
@@ -85,6 +95,7 @@ export function PermitAmendmentReview() {
               </div>
             ))}
           </div>
+        )}
         </CardContent>
       </Card>
 
@@ -136,7 +147,7 @@ export function PermitAmendmentReview() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-accent/50">
             <CardHeader>
               <CardTitle>Registry Review & Assessment</CardTitle>
             </CardHeader>
@@ -167,19 +178,19 @@ export function PermitAmendmentReview() {
                 />
               </div>
 
-              <div className="flex gap-4">
-                <Button onClick={handleSubmitReview} className="flex-1">
+              <div className="flex gap-3 justify-end">
+                <Button variant="secondary" className="w-32">
+                  Save Draft
+                </Button>
+                <Button onClick={handleSubmitReview} className="w-40">
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Submit Review
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  Save Draft
                 </Button>
               </div>
             </CardContent>
           </Card>
         </>
       )}
-    </div>
+    </>
   );
 }

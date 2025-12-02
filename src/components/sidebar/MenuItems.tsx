@@ -175,12 +175,20 @@ export const getUnitSpecificMenuItems = (cepaUnit: string | undefined) => {
       return [
         ...baseItems,
         {
-          title: "Revenue Management",
+          title: "Revenue Collection",
           icon: DollarSign,
           subItems: [
-            { title: "Fee Collection", url: "/revenue/collection", icon: Receipt },
-            { title: "Revenue Reports", url: "/revenue/reports", icon: BarChart3 },
-            { title: "Outstanding Payments", url: "/revenue/outstanding", icon: AlertTriangle },
+            { title: "Invoices", url: "/revenue?tab=collection", icon: FileText },
+            { title: "Payment Processing", url: "/revenue?tab=collection", icon: Receipt },
+            { title: "Outstanding Payments", url: "/revenue?tab=outstanding", icon: AlertTriangle },
+          ]
+        },
+        {
+          title: "Reports & Analytics",
+          icon: BarChart3,
+          subItems: [
+            { title: "Revenue Reports", url: "/revenue?tab=reports", icon: TrendingUp },
+            { title: "Sector Analysis", url: "/revenue?tab=reports", icon: BarChart3 },
           ]
         }
       ];
@@ -227,7 +235,38 @@ export const getUnitSpecificMenuItems = (cepaUnit: string | undefined) => {
   }
 };
 
-export const getMenuItemsForRole = (userRole: string | undefined, operationalUnit: string | undefined) => {
+export const managingDirectorMenuItems = [
+  { 
+    title: "Managing Director Dashboard", 
+    url: "/managing-director-dashboard", 
+    icon: Building 
+  },
+  {
+    title: "Approval Management",
+    icon: FileCheck,
+    subItems: [
+      { title: "Pending Approvals", url: "/managing-director-dashboard?tab=pending", icon: Clock },
+      { title: "Approved Applications", url: "/managing-director-dashboard?tab=approved", icon: CheckCircle },
+      { title: "All Applications", url: "/managing-director-dashboard?tab=all", icon: ClipboardList },
+    ]
+  },
+  {
+    title: "Strategic Oversight",
+    icon: TrendingUp,
+    subItems: [
+      { title: "Performance Dashboard", url: "/executive/performance", icon: BarChart3 },
+      { title: "Unit Performance", url: "/executive/units", icon: Building },
+      { title: "Strategic Reports", url: "/executive/reports", icon: FileText },
+    ]
+  },
+];
+
+export const getMenuItemsForRole = (userRole: string | undefined, operationalUnit: string | undefined, staffPosition?: string | undefined) => {
+  // Managing Director gets special menu
+  if (staffPosition === 'managing_director') {
+    return managingDirectorMenuItems;
+  }
+  
   if (!userRole || userRole === 'public') {
     return publicMenuItems;
   }
@@ -245,7 +284,11 @@ export const getMenuItemsForRole = (userRole: string | undefined, operationalUni
   return publicMenuItems;
 };
 
-export const getRoleDisplayName = (role: string) => {
+export const getRoleDisplayName = (role: string, staffPosition?: string) => {
+  if (staffPosition === 'managing_director') {
+    return 'Managing Director';
+  }
+  
   const roleNames = {
     public: 'Public User',
     registry: 'Registry Officer',

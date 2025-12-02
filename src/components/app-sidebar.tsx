@@ -17,13 +17,13 @@ import {
 export function AppSidebar() {
   const { profile } = useAuth()
 
-  const unitName = getUnitName(profile?.role)
-  const operationsLabel = getOperationsLabel(profile?.role)
-  const navigationItems = getNavigationItems(profile?.role)
+  const unitName = getUnitName(profile?.role, profile?.staff_position)
+  const operationsLabel = getOperationsLabel(profile?.role, profile?.staff_position)
+  const navigationItems = getNavigationItems(profile?.role, profile?.staff_position)
 
   return (
     <Sidebar
-      className="w-64 border-r border-white/30 bg-primary/95 backdrop-blur-2xl shadow-xl"
+      className="border-r border-white/30 bg-primary/95 backdrop-blur-2xl shadow-xl"
       collapsible="none"
     >
       <SidebarContent className="p-0 bg-gradient-to-b from-primary/90 to-primary/80 backdrop-blur-2xl">
