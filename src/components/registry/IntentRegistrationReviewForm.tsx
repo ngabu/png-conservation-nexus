@@ -200,13 +200,6 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
     }
   };
 
-  const handleExportPDF = () => {
-    // Wait briefly to ensure content is ready, then print
-    setTimeout(() => {
-      window.print();
-    }, 100);
-  };
-
   // Get entity address for PDF
   const getEntityAddress = () => {
     if (entityDetails) {
@@ -793,10 +786,6 @@ export function IntentRegistrationReviewForm({ intentId, onBack }: IntentRegistr
               <div className="space-y-4 pt-6 border-t border-glass">
                 <div className="flex items-center justify-between">
                   <Label className="text-muted-foreground">Supporting Documents ({documents.length})</Label>
-                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Export PDF
-                  </Button>
                 </div>
                 {documents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No documents attached</p>
