@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { exportIntentRegistrationPDF } from '@/utils/pdfExport';
 
 interface IntentRegistrationReadOnlyViewProps {
   intent: IntentRegistration;
@@ -137,18 +138,7 @@ export function IntentRegistrationReadOnlyView({ intent, showFeedbackWithBlueHea
   };
 
   const handleExportPDF = () => {
-    // Expand all sections before printing
-    setOpenSections({
-      registration: true,
-      projectSite: true,
-      stakeholder: true,
-      financial: true,
-    });
-    
-    // Wait for sections to expand, then print
-    setTimeout(() => {
-      window.print();
-    }, 100);
+    exportIntentRegistrationPDF(setOpenSections);
   };
 
   // Get entity address for PDF
