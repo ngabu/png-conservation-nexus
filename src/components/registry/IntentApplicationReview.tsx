@@ -195,9 +195,9 @@ export function IntentApplicationReview() {
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader>
+    <div className="space-y-6">
+      <Card className="print:border-none print:shadow-none">
+        <CardHeader className="print:hidden">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center">
@@ -222,7 +222,7 @@ export function IntentApplicationReview() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 print:p-0">
           {!selectedIntentId && (
             <>
               {/* Filters */}
@@ -377,7 +377,7 @@ export function IntentApplicationReview() {
       {/* Read-Only Intent Details + Registry Review Section */}
       {selectedIntent && (
         <>
-          <Alert>
+          <Alert className="print:hidden">
             <Info className="h-4 w-4" />
             <AlertDescription>
               Review the intent registration details below. Provide your assessment and update the status accordingly.
@@ -388,7 +388,7 @@ export function IntentApplicationReview() {
           <IntentRegistrationReadOnlyView intent={selectedIntent} />
 
           {/* Registry Review Section */}
-          <Card className="bg-accent/50">
+          <Card className="bg-accent/50 print:hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
@@ -447,6 +447,6 @@ export function IntentApplicationReview() {
           </Card>
         </>
       )}
-    </>
+    </div>
   );
 }
