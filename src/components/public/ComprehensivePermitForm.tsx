@@ -711,10 +711,10 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
         <h1 className="text-3xl font-bold text-foreground mb-2">
           {isStandalone ? 'New Permit Application' : 'PNG Environment Act 2000 Permit Application'}
         </h1>
-        <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-lg">
           {isStandalone 
             ? 'Complete the form below to apply for an environmental permit under PNG Environment Act 2000.'
-            : 'Complete all 10 steps to apply for an environmental permit'
+            : 'Complete all necessary details to apply for an environmental permit'
           }
         </p>
       </div>
@@ -771,6 +771,11 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
               <span className="hidden sm:inline">Location</span>
               <span className="sm:hidden">Location</span>
             </TabsTrigger>
+            <TabsTrigger value="classification" className="flex flex-col items-center gap-1 text-xs h-auto py-2">
+              <Activity className="w-4 h-4" />
+              <span className="hidden sm:inline">Classification</span>
+              <span className="sm:hidden">Class</span>
+            </TabsTrigger>
             <TabsTrigger value="consultation" className="flex flex-col items-center gap-1 text-xs h-auto py-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Consultation</span>
@@ -780,11 +785,6 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
               <Upload className="w-4 h-4" />
               <span className="hidden sm:inline">Documents</span>
               <span className="sm:hidden">Docs</span>
-            </TabsTrigger>
-            <TabsTrigger value="classification" className="flex flex-col items-center gap-1 text-xs h-auto py-2">
-              <Activity className="w-4 h-4" />
-              <span className="hidden sm:inline">Classification</span>
-              <span className="sm:hidden">Class</span>
             </TabsTrigger>
             <TabsTrigger value="compliance" className="flex flex-col items-center gap-1 text-xs h-auto py-2">
               <FileText className="w-4 h-4" />
