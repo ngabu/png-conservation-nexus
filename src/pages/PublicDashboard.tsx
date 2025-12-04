@@ -17,7 +17,6 @@ import { PermitApplicationsMap } from '@/components/public/PermitApplicationsMap
 import PermitAmalgamation from '@/pages/permit-management/PermitAmalgamation';
 import PermitAmendment from '@/pages/permit-management/PermitAmendment';
 import PermitCompliance from '@/pages/permit-management/PermitCompliance';
-import PermitEnforcement from '@/pages/permit-management/PermitEnforcement';
 import PermitRenewal from '@/pages/permit-management/PermitRenewal';
 import PermitSurrender from '@/pages/permit-management/PermitSurrender';
 import PermitTransfer from '@/pages/permit-management/PermitTransfer';
@@ -25,7 +24,8 @@ import { useUserNotifications } from '@/hooks/useUserNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { IntentRegistrationNew } from '@/components/public/IntentRegistrationNew';
 import { IntentRegistrationList } from '@/components/public/IntentRegistrationList';
-import { ComplianceReportingView } from '@/components/public/ComplianceReportingView';
+import { ComplianceInspectionsView } from '@/components/public/ComplianceInspectionsView';
+import { ComplianceReportSubmissionsView } from '@/components/public/ComplianceReportSubmissionsView';
 import { ApplicationGuide } from '@/components/public/ApplicationGuide';
 import ActivityOverview from '@/pages/ActivityOverview';
 
@@ -146,11 +146,6 @@ export default function PublicDashboard() {
                 <PermitCompliance />
               </div>
             )}
-            {activeTab === 'permit-enforcement' && (
-              <div className="max-w-7xl mx-auto">
-                <PermitEnforcement />
-              </div>
-            )}
             {activeTab === 'permit-renewal' && (
               <div className="max-w-7xl mx-auto">
                 <PermitRenewal />
@@ -191,9 +186,14 @@ export default function PublicDashboard() {
                 <DocumentManagement />
               </div>
             )}
-            {activeTab === 'compliance-reporting' && (
+            {activeTab === 'compliance-inspections' && (
               <div className="max-w-7xl mx-auto">
-                <ComplianceReportingView />
+                <ComplianceInspectionsView />
+              </div>
+            )}
+            {activeTab === 'compliance-reports' && (
+              <div className="max-w-7xl mx-auto">
+                <ComplianceReportSubmissionsView />
               </div>
             )}
             {activeTab === 'profile' && (

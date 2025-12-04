@@ -35,6 +35,7 @@ interface IntentRegistration {
   project_site_address: string | null;
   district: string | null;
   province: string | null;
+  llg: string | null;
   project_site_description: string | null;
   site_ownership_details: string | null;
   government_agreement: string | null;
