@@ -26,7 +26,7 @@ export function PublicConsultationStep({ data, onChange }: PublicConsultationSte
         <CardContent>
           <div className="p-4 bg-muted/50 border border-border rounded-lg text-center">
             <p className="text-muted-foreground">
-              Public consultation is not required for {data.activity_level || 'this activity level'}.
+              Public consultation is not required for Level 1 Activities.
             </p>
           </div>
         </CardContent>

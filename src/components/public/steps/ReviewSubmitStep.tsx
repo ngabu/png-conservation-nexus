@@ -294,32 +294,6 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
                 </div>
               )}
 
-              {/* Activity Classification Details */}
-              {(data.activity_classification || data.activity_category || data.activity_subcategory) && (
-                <div className="pt-3 border-t">
-                  <h5 className="font-medium mb-2">Activity Classification</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {data.activity_classification && (
-                      <div>
-                        <span className="text-muted-foreground">Classification:</span>
-                        <p className="font-medium">{data.activity_classification}</p>
-                      </div>
-                    )}
-                    {data.activity_category && (
-                      <div>
-                        <span className="text-muted-foreground">Category:</span>
-                        <p className="font-medium">{data.activity_category}</p>
-                      </div>
-                    )}
-                    {data.activity_subcategory && (
-                      <div>
-                        <span className="text-muted-foreground">Subcategory:</span>
-                        <p className="font-medium">{data.activity_subcategory}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Compliance and Approvals */}
               {(data.existing_permits_details || data.government_agreements_details || data.required_approvals) && (
