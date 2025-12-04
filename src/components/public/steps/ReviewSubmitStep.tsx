@@ -421,7 +421,7 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
                 <DollarSign className="w-4 h-4" />
                 Fee Summary
               </h4>
-              <div className="p-4 bg-sidebar rounded-lg">
+              <div className="p-4 bg-muted/50 border border-border rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Administration Fee:</span>
@@ -453,31 +453,50 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
             )}
             Application Completeness Check
           </CardTitle>
+          <CardDescription>
+            Review the status of each required field below. All fields must be completed before submission.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {Object.entries(mandatoryFields).map(([sectionName, fields]) => {
             const sectionComplete = fields.every(field => field.value);
+            const completedCount = fields.filter(field => field.value).length;
             return (
-              <div key={sectionName} className="space-y-2">
-                <h4 className="font-medium flex items-center gap-2">
-                  {sectionComplete ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  )}
-                  {sectionName}
-                </h4>
-                <div className="ml-6 space-y-1">
+              <div key={sectionName} className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium flex items-center gap-2">
+                    {sectionComplete ? (
+                      <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center">
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      </div>
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border-2 border-amber-500 bg-amber-100" />
+                    )}
+                    {sectionName}
+                  </h4>
+                  <Badge variant={sectionComplete ? "default" : "secondary"} className="text-xs">
+                    {completedCount}/{fields.length} completed
+                  </Badge>
+                </div>
+                <div className="ml-6 space-y-1.5">
                   {fields.map((field) => (
-                    <div key={field.field} className="flex items-center gap-2 text-sm">
-                      {field.value ? (
-                        <CheckCircle className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <div className="w-3 h-3 rounded-full border border-amber-400" />
-                      )}
+                    <div key={field.field} className="flex items-center gap-3 text-sm">
+                      {/* Radio button style indicator */}
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        field.value 
+                          ? 'border-green-600 bg-green-600' 
+                          : 'border-muted-foreground/40 bg-background'
+                      }`}>
+                        {field.value && (
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        )}
+                      </div>
                       <span className={field.value ? 'text-foreground' : 'text-muted-foreground'}>
                         {field.label}
                       </span>
+                      {field.value && (
+                        <CheckCircle className="w-3 h-3 text-green-600 ml-auto" />
+                      )}
                     </div>
                   ))}
                 </div>

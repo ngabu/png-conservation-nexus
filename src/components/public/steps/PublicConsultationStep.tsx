@@ -24,7 +24,7 @@ export function PublicConsultationStep({ data, onChange }: PublicConsultationSte
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="p-4 bg-sidebar rounded-lg text-center">
+          <div className="p-4 bg-muted/50 border border-border rounded-lg text-center">
             <p className="text-muted-foreground">
               Public consultation is not required for {data.activity_level || 'this activity level'}.
             </p>
@@ -221,7 +221,7 @@ export function PublicConsultationStep({ data, onChange }: PublicConsultationSte
               <Label>Uploaded Documents</Label>
               <div className="space-y-2">
                 {data.public_consultation_proof.map((file: any) => (
-                  <div key={file.id} className="flex items-center justify-between p-3 bg-sidebar rounded-lg">
+                  <div key={file.id} className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
                         <Upload className="w-4 h-4 text-primary" />
