@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ComplianceStaff {
   id: string;
@@ -32,12 +33,15 @@ interface AssignTaskDialogProps {
 }
 
 export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: AssignTaskDialogProps) {
+  const { profile } = useAuth();
   const [taskType, setTaskType] = useState<'inspection' | 'intent_assessment' | 'permit_assessment'>('permit_assessment');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [loading, setLoading] = useState(false);
+
+  const isSelfAssignment = officer?.id === profile?.user_id;
 
   const handleSubmit = async () => {
     if (!officer || !title) return;
@@ -69,9 +73,11 @@ export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: Assi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Assign Task to Officer</DialogTitle>
+          <DialogTitle>{isSelfAssignment ? 'Create Task for Yourself' : 'Assign Task to Officer'}</DialogTitle>
           <DialogDescription>
-            Assign a task to {officer?.full_name || officer?.email}
+            {isSelfAssignment 
+              ? 'Create a new task assigned to yourself'
+              : `Assign a task to ${officer?.full_name || officer?.email}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -161,7 +167,7 @@ export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: Assi
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!title || loading}>
-            {loading ? 'Assigning...' : 'Assign Task'}
+            {loading ? (isSelfAssignment ? 'Creating...' : 'Assigning...') : (isSelfAssignment ? 'Create Task' : 'Assign Task')}
           </Button>
         </DialogFooter>
       </DialogContent>
