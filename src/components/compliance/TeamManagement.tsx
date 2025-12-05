@@ -28,7 +28,7 @@ interface ComplianceStaff {
 }
 
 export function TeamManagement() {
-  const { staff } = useComplianceStaff();
+  const { staff, refetch: refetchStaff } = useComplianceStaff();
   const { assessments } = useComplianceAssessments();
   const { tasks, createTask, updateTask, deleteTask, loading: tasksLoading } = useComplianceTasks();
   const { profile } = useAuth();
@@ -66,8 +66,7 @@ export function TeamManagement() {
       if (error) throw error;
       
       toast.success(`Officer ${newStatus ? 'activated' : 'suspended'} successfully`);
-      // Refresh the staff list
-      window.location.reload();
+      await refetchStaff();
     } catch (error) {
       console.error('Error updating officer status:', error);
       toast.error('Failed to update officer status');
@@ -171,16 +170,35 @@ export function TeamManagement() {
 
         <TabsContent value="team" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                Compliance Team Management
-              </CardTitle>
-              <CardDescription>
-                {isManager 
-                  ? 'Manage compliance staff - suspend/activate officers and assign tasks' 
-                  : 'Compliance team members and their current workload'}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Compliance Team Management
+                </CardTitle>
+                <CardDescription>
+                  {isManager 
+                    ? 'Manage compliance staff - suspend/activate officers and assign tasks' 
+                    : 'Compliance team members and their current workload'}
+                </CardDescription>
+              </div>
+              {isManager && profile && (
+                <Button
+                  onClick={() => handleAssignTask({
+                    id: profile.user_id,
+                    email: profile.email || '',
+                    full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null,
+                    role: profile.user_type || '',
+                    operational_unit: profile.staff_unit || null,
+                    staff_position: profile.staff_position || null,
+                    is_active: true,
+                    created_at: null
+                  })}
+                >
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Assign Task to Self
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {allStaff.length === 0 ? (
@@ -189,23 +207,25 @@ export function TeamManagement() {
                   <p className="text-muted-foreground">No compliance staff found</p>
                 </div>
               ) : (
-          <div className="space-y-4">
+                <div className="space-y-4">
                   {allStaff.map((member) => {
                     const workload = getStaffWorkload(member.id);
                     const taskCount = getStaffTaskCount(member.id);
                     const isOfficer = member.staff_position === 'officer';
+                    const isSelf = member.id === profile?.user_id;
                     return (
                       <div
                         key={member.id}
-                        className={`flex flex-col lg:flex-row lg:items-center justify-between p-4 bg-background border rounded-lg gap-4 ${!member.is_active ? 'opacity-60' : ''}`}
+                        className={`flex flex-col lg:flex-row lg:items-center justify-between p-4 bg-background border rounded-lg gap-4 ${!member.is_active ? 'opacity-60' : ''} ${isSelf ? 'border-primary/50 bg-primary/5' : ''}`}
                       >
                         <div className="flex items-center space-x-3">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${member.is_active ? 'bg-primary/10' : 'bg-muted'}`}>
                             <UserCheck className={`w-5 h-5 ${member.is_active ? 'text-primary' : 'text-muted-foreground'}`} />
                           </div>
                           <div>
-                            <h4 className="font-medium">
+                            <h4 className="font-medium flex items-center gap-2">
                               {member.full_name || 'No name provided'}
+                              {isSelf && <Badge variant="outline" className="text-xs">You</Badge>}
                             </h4>
                             <div className="flex items-center text-sm text-muted-foreground">
                               <Mail className="w-3 h-3 mr-1" />
@@ -234,13 +254,14 @@ export function TeamManagement() {
                           </Badge>
                         </div>
 
-                        {isManager && isOfficer && (
+                        {isManager && isOfficer && !isSelf && (
                           <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleToggleStatus(member)}
                               disabled={updatingOfficer === member.id}
+                              className={member.is_active ? "hover:bg-red-500/10 hover:text-red-600 hover:border-red-500/20" : "hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/20"}
                             >
                               {member.is_active ? (
                                 <>

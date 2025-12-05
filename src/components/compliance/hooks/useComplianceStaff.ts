@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,10 +16,12 @@ interface ComplianceStaff {
 
 export function useComplianceStaff() {
   const [staff, setStaff] = useState<ComplianceStaff[]>([]);
+  const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
 
-  const fetchComplianceStaff = async () => {
+  const fetchComplianceStaff = useCallback(async () => {
     try {
+      setLoading(true);
       // Managers can see all officers including suspended; others only see active
       const isManagerOrAdmin = profile?.staff_position === 'manager' || 
                                profile?.staff_position === 'director' || 
@@ -55,15 +57,16 @@ export function useComplianceStaff() {
       setStaff(transformedData);
     } catch (error) {
       console.error('Error fetching compliance staff:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [profile?.staff_position, profile?.user_type]);
 
   useEffect(() => {
     if (profile?.staff_unit === 'compliance' || profile?.user_type === 'super_admin') {
       fetchComplianceStaff();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.staff_unit, profile?.user_type]);
+  }, [profile?.staff_unit, profile?.user_type, fetchComplianceStaff]);
 
-  return { staff };
+  return { staff, loading, refetch: fetchComplianceStaff };
 }
