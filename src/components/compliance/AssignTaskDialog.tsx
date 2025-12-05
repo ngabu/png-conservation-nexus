@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,18 +10,23 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ComplianceStaff {
   id: string;
   email: string;
   full_name: string | null;
+  staff_position?: string | null;
+}
+
+interface RelatedItem {
+  id: string;
+  label: string;
 }
 
 interface AssignTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  officer: ComplianceStaff | null;
   onAssign: (taskData: {
     task_type: 'inspection' | 'intent_assessment' | 'permit_assessment';
     title: string;
@@ -29,22 +34,120 @@ interface AssignTaskDialogProps {
     assigned_to: string;
     priority: 'low' | 'normal' | 'high' | 'urgent';
     due_date: string | null;
+    related_inspection_id?: string | null;
+    related_intent_id?: string | null;
+    related_permit_id?: string | null;
   }) => Promise<void>;
 }
 
-export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: AssignTaskDialogProps) {
-  const { profile } = useAuth();
+export function AssignTaskDialog({ open, onOpenChange, onAssign }: AssignTaskDialogProps) {
   const [taskType, setTaskType] = useState<'inspection' | 'intent_assessment' | 'permit_assessment'>('permit_assessment');
+  const [relatedItemId, setRelatedItemId] = useState<string>('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [assignedTo, setAssignedTo] = useState<string>('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [loading, setLoading] = useState(false);
+  
+  const [staffList, setStaffList] = useState<ComplianceStaff[]>([]);
+  const [relatedItems, setRelatedItems] = useState<RelatedItem[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(false);
 
-  const isSelfAssignment = officer?.id === profile?.user_id;
+  // Fetch compliance staff (officers and managers)
+  useEffect(() => {
+    const fetchStaff = async () => {
+      setLoadingStaff(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, email, first_name, last_name, staff_position')
+          .eq('staff_unit', 'compliance')
+          .in('staff_position', ['officer', 'manager']);
+
+        if (error) throw error;
+
+        setStaffList((data || []).map(p => ({
+          id: p.user_id,
+          email: p.email || '',
+          full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.email,
+          staff_position: p.staff_position
+        })));
+      } catch (error) {
+        console.error('Error fetching staff:', error);
+      } finally {
+        setLoadingStaff(false);
+      }
+    };
+
+    if (open) {
+      fetchStaff();
+    }
+  }, [open]);
+
+  // Fetch related items based on task type
+  useEffect(() => {
+    const fetchRelatedItems = async () => {
+      setLoadingItems(true);
+      setRelatedItems([]);
+      setRelatedItemId('');
+
+      try {
+        if (taskType === 'inspection') {
+          const { data, error } = await supabase
+            .from('inspections')
+            .select('id, inspection_type, scheduled_date')
+            .order('scheduled_date', { ascending: false })
+            .limit(50);
+
+          if (error) throw error;
+
+          setRelatedItems((data || []).map(i => ({
+            id: i.id,
+            label: `${i.inspection_type} - ${format(new Date(i.scheduled_date), 'PPP')}`
+          })));
+        } else if (taskType === 'intent_assessment') {
+          const { data, error } = await supabase
+            .from('intent_registrations')
+            .select('id, activity_description, created_at')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+          if (error) throw error;
+
+          setRelatedItems((data || []).map(i => ({
+            id: i.id,
+            label: i.activity_description?.substring(0, 50) + (i.activity_description && i.activity_description.length > 50 ? '...' : '') || `Intent ${i.id.slice(0, 8)}`
+          })));
+        } else if (taskType === 'permit_assessment') {
+          const { data, error } = await supabase
+            .from('permit_applications')
+            .select('id, application_number, title')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+          if (error) throw error;
+
+          setRelatedItems((data || []).map(p => ({
+            id: p.id,
+            label: p.application_number || p.title || `Permit ${p.id.slice(0, 8)}`
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching related items:', error);
+      } finally {
+        setLoadingItems(false);
+      }
+    };
+
+    if (open && taskType) {
+      fetchRelatedItems();
+    }
+  }, [open, taskType]);
 
   const handleSubmit = async () => {
-    if (!officer || !title) return;
+    if (!title || !assignedTo) return;
 
     setLoading(true);
     try {
@@ -52,20 +155,34 @@ export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: Assi
         task_type: taskType,
         title,
         description,
-        assigned_to: officer.id,
+        assigned_to: assignedTo,
         priority,
         due_date: dueDate ? dueDate.toISOString() : null,
+        related_inspection_id: taskType === 'inspection' && relatedItemId ? relatedItemId : null,
+        related_intent_id: taskType === 'intent_assessment' && relatedItemId ? relatedItemId : null,
+        related_permit_id: taskType === 'permit_assessment' && relatedItemId ? relatedItemId : null,
       });
       
       // Reset form
       setTitle('');
       setDescription('');
       setTaskType('permit_assessment');
+      setAssignedTo('');
       setPriority('normal');
       setDueDate(undefined);
+      setRelatedItemId('');
       onOpenChange(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getRelatedItemLabel = () => {
+    switch (taskType) {
+      case 'inspection': return 'Select Inspection';
+      case 'intent_assessment': return 'Select Intent';
+      case 'permit_assessment': return 'Select Permit';
+      default: return 'Select Item';
     }
   };
 
@@ -73,11 +190,9 @@ export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: Assi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isSelfAssignment ? 'Create Task for Yourself' : 'Assign Task to Officer'}</DialogTitle>
+          <DialogTitle>Create Task and Assignment</DialogTitle>
           <DialogDescription>
-            {isSelfAssignment 
-              ? 'Create a new task assigned to yourself'
-              : `Assign a task to ${officer?.full_name || officer?.email}`}
+            Create a new task and assign it to a compliance team member
           </DialogDescription>
         </DialogHeader>
 
@@ -92,6 +207,22 @@ export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: Assi
                 <SelectItem value="inspection">Inspection</SelectItem>
                 <SelectItem value="intent_assessment">Intent Assessment</SelectItem>
                 <SelectItem value="permit_assessment">Permit Assessment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{getRelatedItemLabel()}</Label>
+            <Select value={relatedItemId} onValueChange={setRelatedItemId} disabled={loadingItems}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingItems ? 'Loading...' : getRelatedItemLabel()} />
+              </SelectTrigger>
+              <SelectContent>
+                {relatedItems.map(item => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -115,6 +246,22 @@ export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: Assi
               placeholder="Enter task description"
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Assigned To</Label>
+            <Select value={assignedTo} onValueChange={setAssignedTo} disabled={loadingStaff}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingStaff ? 'Loading staff...' : 'Select staff member'} />
+              </SelectTrigger>
+              <SelectContent>
+                {staffList.map(staff => (
+                  <SelectItem key={staff.id} value={staff.id}>
+                    {staff.full_name} ({staff.staff_position})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -166,8 +313,8 @@ export function AssignTaskDialog({ open, onOpenChange, officer, onAssign }: Assi
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!title || loading}>
-            {loading ? (isSelfAssignment ? 'Creating...' : 'Assigning...') : (isSelfAssignment ? 'Create Task' : 'Assign Task')}
+          <Button onClick={handleSubmit} disabled={!title || !assignedTo || loading}>
+            {loading ? 'Creating...' : 'Create Task'}
           </Button>
         </DialogFooter>
       </DialogContent>

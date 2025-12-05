@@ -75,8 +75,7 @@ export function TeamManagement() {
     }
   };
 
-  const handleAssignTask = (officer: ComplianceStaff) => {
-    setSelectedOfficer(officer);
+  const handleOpenTaskDialog = () => {
     setAssignDialogOpen(true);
   };
 
@@ -87,6 +86,9 @@ export function TeamManagement() {
     assigned_to: string;
     priority: 'low' | 'normal' | 'high' | 'urgent';
     due_date: string | null;
+    related_inspection_id?: string | null;
+    related_intent_id?: string | null;
+    related_permit_id?: string | null;
   }) => {
     await createTask({
       ...taskData,
@@ -94,9 +96,9 @@ export function TeamManagement() {
       progress_percentage: 0,
       assigned_by: profile?.user_id || '',
       completed_at: null,
-      related_intent_id: null,
-      related_permit_id: null,
-      related_inspection_id: null,
+      related_intent_id: taskData.related_intent_id || null,
+      related_permit_id: taskData.related_permit_id || null,
+      related_inspection_id: taskData.related_inspection_id || null,
       notes: null,
     });
   };
@@ -184,16 +186,7 @@ export function TeamManagement() {
               </div>
               {isManager && profile && (
                 <Button
-                  onClick={() => handleAssignTask({
-                    id: profile.user_id,
-                    email: profile.email || '',
-                    full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null,
-                    role: profile.user_type || '',
-                    operational_unit: profile.staff_unit || null,
-                    staff_position: profile.staff_position || null,
-                    is_active: true,
-                    created_at: null
-                  })}
+                  onClick={handleOpenTaskDialog}
                 >
                   <ClipboardList className="w-4 h-4 mr-2" />
                   Assign Task to Self
@@ -277,7 +270,7 @@ export function TeamManagement() {
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => handleAssignTask(member)}
+                              onClick={handleOpenTaskDialog}
                               disabled={!member.is_active}
                             >
                               <ClipboardList className="w-4 h-4 mr-1" />
@@ -406,7 +399,6 @@ export function TeamManagement() {
       <AssignTaskDialog
         open={assignDialogOpen}
         onOpenChange={setAssignDialogOpen}
-        officer={selectedOfficer}
         onAssign={handleCreateTask}
       />
     </div>
