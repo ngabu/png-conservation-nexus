@@ -49,6 +49,7 @@ interface DocumentFile {
 
 const categories = [
   { id: 'all', name: 'All Documents' },
+  { id: 'project_details', name: 'Project Details' },
   { id: 'environmental_assessment', name: 'Environmental Assessment' },
   { id: 'monitoring', name: 'Monitoring' },
   { id: 'compliance_reports', name: 'Compliance Reports' },

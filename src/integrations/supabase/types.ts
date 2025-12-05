@@ -673,6 +673,88 @@ export type Database = {
           },
         ]
       }
+      compliance_tasks: {
+        Row: {
+          assigned_by: string
+          assigned_to: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          priority: string
+          progress_percentage: number | null
+          related_inspection_id: string | null
+          related_intent_id: string | null
+          related_permit_id: string | null
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by: string
+          assigned_to: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          progress_percentage?: number | null
+          related_inspection_id?: string | null
+          related_intent_id?: string | null
+          related_permit_id?: string | null
+          status?: string
+          task_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string
+          assigned_to?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          progress_percentage?: number | null
+          related_inspection_id?: string | null
+          related_intent_id?: string | null
+          related_permit_id?: string | null
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_tasks_related_inspection_id_fkey"
+            columns: ["related_inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_tasks_related_intent_id_fkey"
+            columns: ["related_intent_id"]
+            isOneToOne: false
+            referencedRelation: "intent_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_tasks_related_permit_id_fkey"
+            columns: ["related_permit_id"]
+            isOneToOne: false
+            referencedRelation: "permit_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       director_approvals: {
         Row: {
           created_at: string
@@ -3267,6 +3349,7 @@ export type Database = {
           reviewer_last_name: string
           site_ownership_details: string
           status: string
+          total_area_sqkm: number
           updated_at: string
           user_id: string
         }[]

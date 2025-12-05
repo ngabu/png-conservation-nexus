@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, AlertTriangle, FileText, User, MapPin, DollarSign, Download, Printer } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle, AlertTriangle, FileText, User, MapPin, DollarSign, Download, Printer, ClipboardCheck, List, Activity, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useIndustrialSectors } from '@/hooks/useIndustrialSectors';
 
 interface ReviewSubmitStepProps {
   data: any;
@@ -12,6 +14,9 @@ interface ReviewSubmitStepProps {
 }
 
 export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
+  const { industrialSectors } = useIndustrialSectors();
+  const selectedSector = industrialSectors.find(s => s.id === data.industrial_sector_id);
+
   const checkMandatoryFields = () => {
     const mandatory = {
       'Basic Information': [
@@ -26,9 +31,7 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
       ],
       'Project Details': [
         { field: 'projectDescription', label: 'Project Description', value: data.projectDescription },
-        { field: 'projectStartDate', label: 'Project Start Date', value: data.projectStartDate },
-        { field: 'environmentalImpact', label: 'Environmental Impact', value: data.environmentalImpact },
-        { field: 'mitigationMeasures', label: 'Mitigation Measures', value: data.mitigationMeasures }
+        { field: 'projectStartDate', label: 'Project Start Date', value: data.projectStartDate }
       ],
       'Location': [
         { field: 'projectLocation', label: 'Project Location', value: data.projectLocation }
@@ -128,28 +131,148 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
 
   return (
     <div className="space-y-6">
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2 print:hidden">
-        <Button variant="secondary" onClick={handlePrint} className="gap-2">
-          <Printer className="w-4 h-4" />
-          Print
-        </Button>
-        <Button variant="secondary" onClick={handleDownload} className="gap-2">
-          <Download className="w-4 h-4" />
-          Download
-        </Button>
-      </div>
-      {/* Application Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            Application Summary
-          </CardTitle>
-          <CardDescription>
-            Review all information before submitting your environmental permit application
-          </CardDescription>
-        </CardHeader>
+      {/* Tabbed Section for Completeness Check and Summary */}
+      <Tabs defaultValue="completeness" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="completeness" className="gap-2">
+            <ClipboardCheck className="w-4 h-4" />
+            Completeness Check
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="gap-2">
+            <List className="w-4 h-4" />
+            Summary
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Completeness Check Tab */}
+        <TabsContent value="completeness" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {allSectionsComplete ? (
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                )}
+                Application Completeness Check
+              </CardTitle>
+              <CardDescription>
+                Review the status of each required field below. All fields must be completed before submission.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Object.entries(mandatoryFields).map(([sectionName, fields]) => {
+                const sectionComplete = fields.every(field => field.value);
+                const completedCount = fields.filter(field => field.value).length;
+                return (
+                  <div key={sectionName} className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium flex items-center gap-2">
+                        {sectionComplete ? (
+                          <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border-2 border-amber-500 bg-amber-100" />
+                        )}
+                        {sectionName}
+                      </h4>
+                      <Badge variant={sectionComplete ? "default" : "secondary"} className="text-xs">
+                        {completedCount}/{fields.length} completed
+                      </Badge>
+                    </div>
+                    <div className="ml-6 space-y-1.5">
+                      {fields.map((field) => (
+                        <div key={field.field} className="flex items-center gap-3 text-sm">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            field.value 
+                              ? 'border-green-600 bg-green-600' 
+                              : 'border-muted-foreground/40 bg-background'
+                          }`}>
+                            {field.value && (
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                          </div>
+                          <span className={field.value ? 'text-foreground' : 'text-muted-foreground'}>
+                            {field.label}
+                          </span>
+                          {field.value && (
+                            <CheckCircle className="w-3 h-3 text-green-600 ml-auto" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Documents Section */}
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium flex items-center gap-2">
+                    {data.uploaded_files && data.uploaded_files.length > 0 ? (
+                      <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center">
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      </div>
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border-2 border-amber-500 bg-amber-100" />
+                    )}
+                    Documents
+                  </h4>
+                  <Badge variant={data.uploaded_files?.length > 0 ? "default" : "secondary"} className="text-xs">
+                    {data.uploaded_files?.length || 0} uploaded
+                  </Badge>
+                </div>
+                <div className="ml-6 space-y-1.5">
+                  {data.uploaded_files && data.uploaded_files.length > 0 ? (
+                    data.uploaded_files.map((file: any, index: number) => (
+                      <div key={index} className="flex items-center gap-3 text-sm">
+                        <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center border-green-600 bg-green-600">
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        </div>
+                        <span className="text-foreground">
+                          {file.name || file.filename || `Document ${index + 1}`}
+                        </span>
+                        <CheckCircle className="w-3 h-3 text-green-600 ml-auto" />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/40 bg-background" />
+                      <span className="text-muted-foreground">No documents uploaded</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="mt-4 space-y-4">
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-2 print:hidden">
+            <Button variant="secondary" onClick={handlePrint} className="gap-2">
+              <Printer className="w-4 h-4" />
+              Print
+            </Button>
+            <Button variant="secondary" onClick={handleDownload} className="gap-2">
+              <Download className="w-4 h-4" />
+              Download
+            </Button>
+          </div>
+
+          {/* Application Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Application Summary
+              </CardTitle>
+              <CardDescription>
+                Review all information before submitting your environmental permit application
+              </CardDescription>
+            </CardHeader>
         <CardContent id="application-summary" className="space-y-6">
           {/* Basic Info Summary */}
           <div>
@@ -178,10 +301,10 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
           </div>
 
           {/* Activity Classification Summary */}
-          {(data.activity_level || data.permit_type_specific) && (
+          {(data.activity_level || data.permit_type || data.activity_description || data.industrial_sector_id) && (
             <div>
               <h4 className="font-medium flex items-center gap-2 mb-3">
-                <Badge className="w-4 h-4" />
+                <Activity className="w-4 h-4" />
                 Activity Classification
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -195,8 +318,42 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Permit Type:</span>
-                  <p className="font-medium text-orange-600">{data.permit_type_specific || 'Not specified'}</p>
+                  <p className="font-medium text-orange-600">{data.permit_type || 'Not specified'}</p>
                 </div>
+                <div>
+                  <span className="text-muted-foreground">Industrial Sector:</span>
+                  <p className="font-medium text-orange-600">{selectedSector?.name || 'Not specified'}</p>
+                </div>
+                <div className="col-span-full">
+                  <span className="text-muted-foreground">Description of Prescribed Activity:</span>
+                  <p className="font-medium text-orange-600">{data.activity_description || 'Not specified'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Public Consultation Summary - only for Level 2/3 */}
+          {['Level 2', 'Level 3'].includes(data.activity_level) && (data.consultation_period_start || data.consultation_period_end) && (
+            <div>
+              <h4 className="font-medium flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4" />
+                Public Consultation
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Consultation Start Date:</span>
+                  <p className="font-medium text-orange-600">{data.consultation_period_start || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Consultation End Date:</span>
+                  <p className="font-medium text-orange-600">{data.consultation_period_end || 'Not specified'}</p>
+                </div>
+                {data.public_consultation_proof && data.public_consultation_proof.length > 0 && (
+                  <div className="col-span-full">
+                    <span className="text-muted-foreground">Consultation Documents:</span>
+                    <p className="font-medium text-orange-600">{data.public_consultation_proof.length} document(s) uploaded</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -246,19 +403,6 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
                 </div>
               </div>
 
-              <div>
-                <span className="text-muted-foreground">Environmental Impact Assessment:</span>
-                <p className="font-medium text-orange-600 whitespace-pre-wrap">
-                  {data.environmentalImpact || 'Not provided'}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-muted-foreground">Mitigation Measures:</span>
-                <p className="font-medium text-orange-600 whitespace-pre-wrap">
-                  {data.mitigationMeasures || 'Not provided'}
-                </p>
-              </div>
 
               {/* Optional fields - only show if filled */}
               {(data.operational_details || data.operational_capacity || data.operating_hours) && (
@@ -413,72 +557,10 @@ export function ReviewSubmitStep({ data, onChange }: ReviewSubmitStepProps) {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Mandatory Fields Checklist */}
-      <Card className="print:hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {allSectionsComplete ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            ) : (
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-            )}
-            Application Completeness Check
-          </CardTitle>
-          <CardDescription>
-            Review the status of each required field below. All fields must be completed before submission.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(mandatoryFields).map(([sectionName, fields]) => {
-            const sectionComplete = fields.every(field => field.value);
-            const completedCount = fields.filter(field => field.value).length;
-            return (
-              <div key={sectionName} className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium flex items-center gap-2">
-                    {sectionComplete ? (
-                      <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      </div>
-                    ) : (
-                      <div className="w-4 h-4 rounded-full border-2 border-amber-500 bg-amber-100" />
-                    )}
-                    {sectionName}
-                  </h4>
-                  <Badge variant={sectionComplete ? "default" : "secondary"} className="text-xs">
-                    {completedCount}/{fields.length} completed
-                  </Badge>
-                </div>
-                <div className="ml-6 space-y-1.5">
-                  {fields.map((field) => (
-                    <div key={field.field} className="flex items-center gap-3 text-sm">
-                      {/* Radio button style indicator */}
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        field.value 
-                          ? 'border-green-600 bg-green-600' 
-                          : 'border-muted-foreground/40 bg-background'
-                      }`}>
-                        {field.value && (
-                          <div className="w-2 h-2 rounded-full bg-white" />
-                        )}
-                      </div>
-                      <span className={field.value ? 'text-foreground' : 'text-muted-foreground'}>
-                        {field.label}
-                      </span>
-                      {field.value && (
-                        <CheckCircle className="w-3 h-3 text-green-600 ml-auto" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Legal Declaration */}
       <Card className="print:hidden">

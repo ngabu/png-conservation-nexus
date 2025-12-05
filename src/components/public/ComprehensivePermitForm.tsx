@@ -16,6 +16,7 @@ import { ActivityClassificationStep } from '@/components/public/steps/ActivityCl
 import { ApplicationFeeStep } from '@/components/public/steps/ApplicationFeeStep';
 import { PublicConsultationStep } from '@/components/public/steps/PublicConsultationStep';
 import { useIntentRegistrations } from '@/hooks/useIntentRegistrations';
+import { usePrescribedActivities } from '@/hooks/usePrescribedActivities';
 
 import { ReviewSubmitStep } from '@/components/public/steps/ReviewSubmitStep';
 
@@ -53,6 +54,9 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
   // Fetch approved intent registrations
   const { intents, loading: intentsLoading } = useIntentRegistrations(userId || undefined);
   const approvedIntents = intents.filter(intent => intent.status === 'approved');
+  
+  // Fetch prescribed activities for classification lookup
+  const { data: prescribedActivities } = usePrescribedActivities();
 
   useEffect(() => {
     if (!permitId) {
@@ -101,6 +105,17 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
     industrial_sector_id: '', // Industrial sector field
     district: '', // District field
     province: '', // Province field
+    llg: '', // LLG field
+    // Project Site Info fields (from intent registration)
+    project_site_description: '',
+    site_ownership_details: '',
+    government_agreement: '',
+    departments_approached: '',
+    approvals_required: '',
+    landowner_negotiation_status: '',
+    total_area_sqkm: '',
+    project_boundary: null, // GIS boundary from intent registration
+    selected_intent_activity_description: '', // Activity description from selected intent
     // PNG Environment Act 2000 fields - Public Consultation
     public_consultation_proof: [],
     consultation_period_start: '',
@@ -183,6 +198,17 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
               industrial_sector_id: data.industrial_sector_id || '', // Add industrial sector mapping
               district: data.district || '', // Add district mapping
               province: data.province || '', // Add province mapping
+              llg: '', // LLG field
+              // Project Site Info fields
+              project_site_description: '',
+              site_ownership_details: '',
+              government_agreement: '',
+              departments_approached: '',
+              approvals_required: '',
+              landowner_negotiation_status: '',
+              total_area_sqkm: '',
+              project_boundary: null,
+              selected_intent_activity_description: '',
               public_consultation_proof: Array.isArray(data.public_consultation_proof) ? data.public_consultation_proof : [],
               consultation_period_start: data.consultation_period_start || '',
               consultation_period_end: data.consultation_period_end || '',
@@ -225,6 +251,51 @@ export function ComprehensivePermitForm({ permitId, onSuccess, onCancel, isStand
       setFormData(prev => ({ ...prev, applicationNumber }));
     }
   }, [applicationNumber, draftId, permitId]);
+
+  // Auto-fill Project Site Info, Project Description, and Classification when an intent is selected
+  useEffect(() => {
+    if (formData.intent_registration_id) {
+      const selectedIntent = approvedIntents.find(intent => intent.id === formData.intent_registration_id);
+      if (selectedIntent) {
+        // Look up prescribed activity details if available
+        const selectedActivity = selectedIntent.prescribed_activity_id && prescribedActivities
+          ? prescribedActivities.find(a => a.id === selectedIntent.prescribed_activity_id)
+          : null;
+        
+        setFormData(prev => ({
+          ...prev,
+          // Project Description from intent
+          projectDescription: selectedIntent.activity_description || prev.projectDescription,
+          // Classification fields from intent
+          activity_level: selectedIntent.activity_level || prev.activity_level,
+          prescribed_activity_id: selectedIntent.prescribed_activity_id || prev.prescribed_activity_id,
+          // Activity details from prescribed activity lookup
+          activity_category: selectedActivity?.category_type || prev.activity_category,
+          activity_subcategory: selectedActivity?.sub_category || prev.activity_subcategory,
+          activity_description: selectedActivity?.activity_description || prev.activity_description,
+          // Project Site Info fields from intent registration
+          projectLocation: selectedIntent.project_site_address || prev.projectLocation,
+          project_site_description: selectedIntent.project_site_description || prev.project_site_description,
+          site_ownership_details: selectedIntent.site_ownership_details || prev.site_ownership_details,
+          government_agreement: selectedIntent.government_agreement || prev.government_agreement,
+          departments_approached: selectedIntent.departments_approached || prev.departments_approached,
+          approvals_required: selectedIntent.approvals_required || prev.approvals_required,
+          landowner_negotiation_status: selectedIntent.landowner_negotiation_status || prev.landowner_negotiation_status,
+          district: selectedIntent.district || prev.district,
+          province: selectedIntent.province || prev.province,
+          llg: selectedIntent.llg || prev.llg,
+          total_area_sqkm: selectedIntent.total_area_sqkm?.toString() || prev.total_area_sqkm,
+          // Also copy entity info
+          entity_id: selectedIntent.entity_id || prev.entity_id,
+          entity_name: selectedIntent.entity?.name || prev.entity_name,
+          // Project boundary for map display
+          project_boundary: (selectedIntent as any).project_boundary || prev.project_boundary,
+          // Activity description for popup
+          selected_intent_activity_description: selectedIntent.activity_description || prev.selected_intent_activity_description,
+        }));
+      }
+    }
+  }, [formData.intent_registration_id, approvedIntents, prescribedActivities]);
 
   const [activeTab, setActiveTab] = useState('project');
 
