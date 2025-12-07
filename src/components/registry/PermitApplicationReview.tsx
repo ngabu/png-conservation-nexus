@@ -9,38 +9,46 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { FileText, Calendar, Building, Clock, Search, Filter, CheckCircle, Info } from 'lucide-react';
+import { FileText, Calendar, Building, Clock, Search, Filter, CheckCircle, Info, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
-import { PermitApplicationReadOnlyView } from './read-only/PermitApplicationReadOnlyView';
+import { PermitApplicationExpandedView } from './read-only/PermitApplicationExpandedView';
 
 interface PermitApplication {
   id: string;
   user_id: string;
   entity_id: string;
   title: string;
-  description: string;
+  description: string | null;
   permit_type: string;
   status: string;
   application_number: string | null;
   created_at: string;
   updated_at: string;
-  activity_location: string | null;
-  estimated_cost_kina: number | null;
-  activity_classification: string | null;
-  activity_category: string | null;
-  activity_subcategory: string | null;
-  permit_period: string | null;
-  commencement_date: string | null;
-  completion_date: string | null;
-  entity_name: string | null;
-  entity_type: string | null;
-  coordinates: any;
-  environmental_impact: string | null;
-  mitigation_measures: string | null;
-  compliance_checks: any;
-  uploaded_files: any;
+  activity_location?: string | null;
+  estimated_cost_kina?: number | null;
+  activity_classification?: string | null;
+  activity_category?: string | null;
+  activity_subcategory?: string | null;
+  activity_level?: string | null;
+  permit_period?: string | null;
+  commencement_date?: string | null;
+  completion_date?: string | null;
+  entity_name?: string | null;
+  entity_type?: string | null;
+  coordinates?: any;
+  project_boundary?: any;
+  environmental_impact?: string | null;
+  mitigation_measures?: string | null;
+  compliance_checks?: any;
+  uploaded_files?: any;
+  project_description?: string | null;
+  project_start_date?: string | null;
+  project_end_date?: string | null;
+  district?: string | null;
+  province?: string | null;
+  llg?: string | null;
+  permit_specific_fields?: any;
   entity?: {
     id: string;
     name: string;
@@ -73,9 +81,10 @@ export function PermitApplicationReview() {
         .from('permit_applications')
         .select(`
           *,
-          entity:entities!inner(id, name, entity_type)
+          entity:entities(id, name, entity_type)
         `)
-        .in('status', ['submitted', 'under_initial_review', 'under_review', 'approved', 'rejected', 'requires_clarification'])
+        .not('status', 'eq', 'approved')
+        .not('status', 'eq', 'draft')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -83,8 +92,8 @@ export function PermitApplicationReview() {
       // Map data to include entity name and type directly on application
       const mappedApplications: PermitApplication[] = (data || []).map(app => ({
         ...app,
-        entity_name: app.entity?.name || null,
-        entity_type: app.entity?.entity_type || null,
+        entity_name: app.entity?.name || app.entity_name || null,
+        entity_type: app.entity?.entity_type || app.entity_type || null,
       }));
       
       setApplications(mappedApplications);
@@ -200,6 +209,7 @@ export function PermitApplicationReview() {
     const matchesSearch = !searchTerm || 
       app.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.entity?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.entity_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.application_number?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
@@ -223,9 +233,9 @@ export function PermitApplicationReview() {
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader>
+    <div className="space-y-6">
+      <Card className="print:border-none print:shadow-none">
+        <CardHeader className="print:hidden">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center">
@@ -250,7 +260,7 @@ export function PermitApplicationReview() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 print:p-0">
           {!selectedApplicationId && (
             <>
               {/* Filters */}
@@ -280,7 +290,6 @@ export function PermitApplicationReview() {
                       <SelectItem value="submitted">Submitted</SelectItem>
                       <SelectItem value="under_initial_review">Under Initial Review</SelectItem>
                       <SelectItem value="under_review">Under Review</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
                       <SelectItem value="requires_clarification">Requires Clarification</SelectItem>
                     </SelectContent>
@@ -345,14 +354,19 @@ export function PermitApplicationReview() {
                                   {app.application_number}
                                 </Badge>
                               )}
+                              {app.activity_level && (
+                                <Badge variant="outline">
+                                  Level {app.activity_level}
+                                </Badge>
+                              )}
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Building className="w-4 h-4" />
-                                <span>{app.entity?.name || 'Unknown Entity'}</span>
+                                <span>{app.entity?.name || app.entity_name || 'Unknown Entity'}</span>
                                 <span className="text-xs px-1 py-0.5 bg-muted rounded">
-                                  {app.entity?.entity_type}
+                                  {app.entity?.entity_type || app.entity_type}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
@@ -396,25 +410,25 @@ export function PermitApplicationReview() {
         </CardContent>
       </Card>
 
-      {/* Read-Only Permit Application Details + Registry Review Section */}
+      {/* Expanded Permit Application Details + Registry Review Section */}
       {selectedApplication && (
         <>
-          <Alert>
+          <Alert className="print:hidden">
             <Info className="h-4 w-4" />
             <AlertDescription>
               Review the permit application details below. Provide your assessment and update the status accordingly.
             </AlertDescription>
           </Alert>
 
-          {/* Read-Only Permit Application Details */}
-          {selectedApplication && <PermitApplicationReadOnlyView application={selectedApplication} />}
+          {/* Expanded Permit Application Details with Collapsible Sections */}
+          <PermitApplicationExpandedView application={selectedApplication} />
 
-          {/* Registry Review Section */}
-          <Card className="bg-accent/50">
+          {/* Official Feedback from CEPA Section */}
+          <Card className="bg-accent/50 print:hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Registry Review & Assessment
+                <MessageSquare className="w-5 h-5 text-primary" />
+                Official Feedback from CEPA
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -470,6 +484,6 @@ export function PermitApplicationReview() {
           </Card>
         </>
       )}
-    </>
+    </div>
   );
 }
