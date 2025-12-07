@@ -1751,6 +1751,7 @@ export type Database = {
           created_at: string
           departments_approached: string | null
           district: string | null
+          docusign_envelope_id: string | null
           entity_id: string
           estimated_cost_kina: number | null
           existing_permit_id: string | null
@@ -1781,6 +1782,7 @@ export type Database = {
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          signed_document_path: string | null
           site_ownership_details: string | null
           status: string
           total_area_sqkm: number | null
@@ -1804,6 +1806,7 @@ export type Database = {
           created_at?: string
           departments_approached?: string | null
           district?: string | null
+          docusign_envelope_id?: string | null
           entity_id: string
           estimated_cost_kina?: number | null
           existing_permit_id?: string | null
@@ -1834,6 +1837,7 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          signed_document_path?: string | null
           site_ownership_details?: string | null
           status?: string
           total_area_sqkm?: number | null
@@ -1857,6 +1861,7 @@ export type Database = {
           created_at?: string
           departments_approached?: string | null
           district?: string | null
+          docusign_envelope_id?: string | null
           entity_id?: string
           estimated_cost_kina?: number | null
           existing_permit_id?: string | null
@@ -1887,6 +1892,7 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          signed_document_path?: string | null
           site_ownership_details?: string | null
           status?: string
           total_area_sqkm?: number | null

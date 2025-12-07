@@ -44,13 +44,14 @@ const revenueNavigationItems: RevenueNavigationItem[] = [
     value: "listings", 
     icon: List,
     subItems: [
+      { title: "Intents", value: "listings-intents", icon: FileText },
       { title: "Entities", value: "listings-entities", icon: Building2 },
       { title: "Permits", value: "listings-permits", icon: FileText },
     ]
   },
   { title: "Collection", value: "collection", icon: CreditCard },
   { title: "Outstanding", value: "outstanding", icon: AlertTriangle },
-  { title: "Reports", value: "reports", icon: BarChart3 },
+  { title: "Analytics and Reporting", value: "analytics-reporting", icon: BarChart3 },
 ]
 
 const managementItems: RevenueNavigationItem[] = [

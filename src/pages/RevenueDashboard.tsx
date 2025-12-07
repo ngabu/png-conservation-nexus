@@ -7,9 +7,11 @@ import { OutstandingPaymentsManagement } from '@/components/revenue/OutstandingP
 import { RevenueOfficerOperations } from '@/components/revenue/RevenueOfficerOperations';
 import { RevenueItemCodesManagement } from '@/components/revenue/RevenueItemCodesManagement';
 import { RevenueReports } from '@/components/revenue/RevenueReports';
+import RevenueAnalyticsReports from '@/components/revenue/RevenueAnalyticsReports';
 import { RevenueKPIs } from '@/components/revenue/RevenueKPIs';
 import { RevenueEntitiesList } from '@/components/revenue/RevenueEntitiesList';
 import { RevenuePermitsList } from '@/components/revenue/RevenuePermitsList';
+import { RevenueIntentRegistrationsList } from '@/components/revenue/RevenueIntentRegistrationsList';
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { RevenueSidebar } from '@/components/revenue/RevenueSidebar';
@@ -49,6 +51,10 @@ export default function RevenueDashboard() {
                   <RevenueOfficerOperations />
                 </TabsContent>
 
+                <TabsContent value="listings-intents" className="space-y-6">
+                  <RevenueIntentRegistrationsList />
+                </TabsContent>
+
                 <TabsContent value="listings-entities" className="space-y-6">
                   <RevenueEntitiesList />
                 </TabsContent>
@@ -78,6 +84,10 @@ export default function RevenueDashboard() {
 
                 <TabsContent value="reports" className="space-y-6">
                   <RevenueReports />
+                </TabsContent>
+
+                <TabsContent value="analytics-reporting" className="space-y-6">
+                  <RevenueAnalyticsReports />
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-6">

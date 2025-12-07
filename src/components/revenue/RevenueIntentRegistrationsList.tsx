@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { Loader2, Search, Filter, ChevronLeft, ChevronRight, ChevronDown, ChevronsUpDown, FileDown } from 'lucide-react';
+import { Loader2, Search, Filter, ChevronLeft, ChevronRight, ChevronDown, ChevronsUpDown, FileDown, Clock, AlertCircle, User, Mail, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
 import { IntentRegistrationReadOnlyView } from '@/components/public/IntentRegistrationReadOnlyView';
@@ -45,8 +48,6 @@ interface IntentRegistration {
   prescribed_activity_id: string | null;
   existing_permit_id: string | null;
   project_boundary: any | null;
-  latitude: number | null;
-  longitude: number | null;
   total_area_sqkm: number | null;
   signed_document_path?: string | null;
   docusign_envelope_id?: string | null;
@@ -63,7 +64,7 @@ interface IntentRegistration {
   };
 }
 
-export function ApprovedIntentsList() {
+export function RevenueIntentRegistrationsList() {
   const { toast } = useToast();
   const [intents, setIntents] = useState<IntentRegistration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,11 +76,25 @@ export function ApprovedIntentsList() {
   const [activeTab, setActiveTab] = useState<string>('mapping');
   const ITEMS_PER_PAGE = 10;
 
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      submitted: 'secondary',
+      approved: 'default',
+      rejected: 'destructive',
+      under_review: 'outline'
+    };
+    return (
+      <Badge variant={variants[status] || 'outline'} className="capitalize">
+        {status.replace('_', ' ')}
+      </Badge>
+    );
+  };
+
   useEffect(() => {
-    fetchIntentsForReview();
+    fetchIntents();
   }, []);
 
-  const fetchIntentsForReview = async () => {
+  const fetchIntents = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -88,7 +103,6 @@ export function ApprovedIntentsList() {
           *,
           entity:entities(id, name, entity_type)
         `)
-        .neq('status', 'approved')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -104,10 +118,10 @@ export function ApprovedIntentsList() {
       }));
       setIntents(processedData);
     } catch (error) {
-      console.error('Error fetching approved intent registrations:', error);
+      console.error('Error fetching intent registrations:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load approved intent registrations',
+        description: 'Failed to load intent registrations',
         variant: 'destructive'
       });
     } finally {
@@ -140,6 +154,21 @@ export function ApprovedIntentsList() {
     return Array.from(new Set(intents.map(i => i.activity_level)));
   }, [intents]);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'rejected':
+        return 'destructive';
+      case 'under_review':
+        return 'outline';
+      default:
+        return 'outline';
+    }
+  };
+
   const exportToExcel = () => {
     const exportData = filteredIntents.map(intent => ({
       'Entity': intent.entity?.name || '-',
@@ -166,14 +195,16 @@ export function ApprovedIntentsList() {
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
+
     worksheet['!cols'] = [
       { wch: 25 }, { wch: 15 }, { wch: 40 }, { wch: 40 }, { wch: 15 },
       { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 40 },
       { wch: 30 }, { wch: 20 }, { wch: 30 }, { wch: 30 }, { wch: 20 },
       { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 40 }
     ];
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Intent Reviews');
-    XLSX.writeFile(workbook, `Intent_Application_Reviews_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Intent Registrations');
+    XLSX.writeFile(workbook, `Intent_Registrations_Revenue_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   const exportToCSV = () => {
@@ -205,7 +236,7 @@ export function ApprovedIntentsList() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Intent_Application_Reviews_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.download = `Intent_Registrations_Revenue_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
   };
 
@@ -222,7 +253,7 @@ export function ApprovedIntentsList() {
       <CardHeader className="print:hidden">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <CardTitle>Intent Application Reviews</CardTitle>
+            <CardTitle>Intent Registrations</CardTitle>
             <div className="flex gap-2">
               <Button onClick={exportToExcel} className="bg-primary hover:bg-primary/90 text-primary-foreground" size="sm">
                 <FileDown className="h-4 w-4 mr-2" />
@@ -256,8 +287,8 @@ export function ApprovedIntentsList() {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="under_review">Under Review</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="requires_clarification">Requires Clarification</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -279,7 +310,7 @@ export function ApprovedIntentsList() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredIntents.length)} of {filteredIntents.length} intent registrations for review
+            Showing {startIndex + 1}-{Math.min(endIndex, filteredIntents.length)} of {filteredIntents.length} intent registrations
           </p>
         </div>
       </CardHeader>
@@ -302,21 +333,12 @@ export function ApprovedIntentsList() {
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
                   {searchTerm || statusFilter !== 'all' || levelFilter !== 'all' 
                     ? 'No intent registrations match your search criteria' 
-                    : 'No intent registrations pending review'}
+                    : 'No intent registrations found'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedIntents.map(intent => {
                 const isExpanded = expandedIntentId === intent.id;
-                const getStatusVariant = (status: string) => {
-                  switch (status) {
-                    case 'pending': return 'secondary';
-                    case 'under_review': return 'outline';
-                    case 'rejected': return 'destructive';
-                    case 'requires_clarification': return 'outline';
-                    default: return 'default';
-                  }
-                };
                 return (
                   <>
                     <TableRow 
@@ -327,8 +349,7 @@ export function ApprovedIntentsList() {
                       <TableCell>
                         {isExpanded 
                           ? <ChevronDown className="w-4 h-4 text-primary" /> 
-                          : <ChevronsUpDown className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
-                        }
+                          : <ChevronsUpDown className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />}
                       </TableCell>
                       <TableCell className="font-medium">{intent.entity?.name || '-'}</TableCell>
                       <TableCell>{intent.activity_level}</TableCell>
@@ -336,8 +357,8 @@ export function ApprovedIntentsList() {
                       <TableCell>{intent.province || '-'}</TableCell>
                       <TableCell>{format(new Date(intent.created_at), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusVariant(intent.status)}>
-                          {intent.status.replace(/_/g, ' ')}
+                        <Badge variant={getStatusColor(intent.status)}>
+                          {intent.status.replace('_', ' ')}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -370,6 +391,8 @@ export function ApprovedIntentsList() {
                                   district={intent.district}
                                   province={intent.province}
                                   llg={intent.llg}
+                                  customTitle="Proposed Project Site Map"
+                                  customDescription=""
                                 />
                               </TabsContent>
 
@@ -381,7 +404,7 @@ export function ApprovedIntentsList() {
                                 <IntentRegistryReviewTab 
                                   intentId={intent.id} 
                                   currentStatus={intent.status}
-                                  onStatusUpdate={fetchIntentsForReview}
+                                  onStatusUpdate={fetchIntents}
                                 />
                               </TabsContent>
 
@@ -389,7 +412,7 @@ export function ApprovedIntentsList() {
                                 <IntentComplianceReviewTab 
                                   intentId={intent.id} 
                                   currentStatus={intent.status}
-                                  onStatusUpdate={fetchIntentsForReview}
+                                  onStatusUpdate={fetchIntents}
                                 />
                               </TabsContent>
 
@@ -397,7 +420,7 @@ export function ApprovedIntentsList() {
                                 <IntentInvoicePaymentsTab 
                                   intentId={intent.id}
                                   entityId={intent.entity_id}
-                                  onStatusUpdate={fetchIntentsForReview}
+                                  onStatusUpdate={fetchIntents}
                                 />
                               </TabsContent>
 
@@ -405,14 +428,88 @@ export function ApprovedIntentsList() {
                                 <IntentMDReviewTab 
                                   intentId={intent.id} 
                                   currentStatus={intent.status}
-                                  onStatusUpdate={fetchIntentsForReview}
+                                  onStatusUpdate={fetchIntents}
                                 />
                               </TabsContent>
                             </Tabs>
-
-                            {/* Print-only content */}
+                            
                             <div className="hidden print:block">
                               <IntentRegistrationReadOnlyView intent={intent} />
+                            </div>
+
+                            <div className="print:hidden">
+                              <Separator className="my-6" />
+                              <Card className="bg-muted/30">
+                                <CardHeader className="bg-primary/10">
+                                  <CardTitle className="text-lg">Official Feedback from CEPA</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
+                                  {intent.status === 'pending' ? (
+                                    <Alert>
+                                      <Clock className="h-4 w-4" />
+                                      <AlertDescription>
+                                        This submission is currently under review. Any feedback from CEPA will be displayed here once the review is complete.
+                                      </AlertDescription>
+                                    </Alert>
+                                  ) : (
+                                    <>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                          <Label className="text-muted-foreground mb-1">Status</Label>
+                                          <div className="mt-1">{getStatusBadge(intent.status)}</div>
+                                        </div>
+                                        {intent.reviewed_at && (
+                                          <div>
+                                            <Label className="text-muted-foreground mb-1">Review Date</Label>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                                              <p className="text-sm">{format(new Date(intent.reviewed_at), 'PPP p')}</p>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {intent.reviewer && (
+                                        <div className="bg-background/50 p-4 rounded-lg">
+                                          <Label className="text-muted-foreground mb-2">Reviewed By</Label>
+                                          <div className="space-y-1 mt-2">
+                                            <div className="flex items-center gap-2">
+                                              <User className="w-4 h-4 text-muted-foreground" />
+                                              <p className="text-sm font-medium">
+                                                {intent.reviewer?.first_name} {intent.reviewer?.last_name}
+                                              </p>
+                                            </div>
+                                            {intent.reviewer?.email && (
+                                              <div className="flex items-center gap-2">
+                                                <Mail className="w-4 h-4 text-muted-foreground" />
+                                                <p className="text-sm text-muted-foreground">{intent.reviewer.email}</p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {intent.review_notes && (
+                                        <div>
+                                          <Label className="text-muted-foreground mb-2">Official Review Notes</Label>
+                                          <div className="bg-background/50 p-4 rounded-lg mt-2">
+                                            <p className="text-sm whitespace-pre-wrap">{intent.review_notes}</p>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {!intent.review_notes && !intent.reviewer && (
+                                        <Alert>
+                                          <AlertCircle className="h-4 w-4" />
+                                          <AlertDescription>
+                                            The team has updated the status but has not yet provided detailed feedback.
+                                          </AlertDescription>
+                                        </Alert>
+                                      )}
+                                    </>
+                                  )}
+                                </CardContent>
+                              </Card>
                             </div>
                           </div>
                         </TableCell>
@@ -425,7 +522,6 @@ export function ApprovedIntentsList() {
           </TableBody>
         </Table>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4 print:hidden">
             <p className="text-sm text-muted-foreground">
@@ -435,20 +531,20 @@ export function ApprovedIntentsList() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 mr-1" />
                 Previous
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
                 disabled={currentPage === totalPages}
               >
                 Next
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </div>
