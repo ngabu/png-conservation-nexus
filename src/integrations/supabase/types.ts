@@ -1925,6 +1925,7 @@ export type Database = {
           paid_date: string | null
           payment_status: string | null
           permit_id: string | null
+          source_dashboard: string | null
           status: string
           stripe_receipt_url: string | null
           updated_at: string
@@ -1954,6 +1955,7 @@ export type Database = {
           paid_date?: string | null
           payment_status?: string | null
           permit_id?: string | null
+          source_dashboard?: string | null
           status?: string
           stripe_receipt_url?: string | null
           updated_at?: string
@@ -1983,6 +1985,7 @@ export type Database = {
           paid_date?: string | null
           payment_status?: string | null
           permit_id?: string | null
+          source_dashboard?: string | null
           status?: string
           stripe_receipt_url?: string | null
           updated_at?: string

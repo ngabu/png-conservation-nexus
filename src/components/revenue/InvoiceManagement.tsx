@@ -12,7 +12,7 @@ import { useEntitiesForInvoice } from '@/hooks/useEntitiesForInvoice';
 import { usePermitApplicationsByEntity } from '@/hooks/usePermitApplicationsByEntity';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, Plus, Edit, Trash2, Send, Eye, Download, Search, Filter } from 'lucide-react';
+import { FileText, Plus, Trash2, Send, Eye, Download, Search, Filter, Ban } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -22,14 +22,12 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function InvoiceManagement() {
-  const { invoices, loading, updateInvoice, refetch } = useInvoices();
+  const { invoices, loading, suspendInvoice, refetch } = useInvoices();
   const { data: entities = [], isLoading: entitiesLoading } = useEntitiesForInvoice();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [entitySearchOpen, setEntitySearchOpen] = useState(false);
   const [entitySearchValue, setEntitySearchValue] = useState('');
 
@@ -124,16 +122,26 @@ export function InvoiceManagement() {
     }
   };
 
-  const handleSendInvoice = async (invoiceId: string) => {
-    try {
+  const handleSuspendInvoice = async (invoice: any) => {
+    if (invoice.source_dashboard && invoice.source_dashboard !== 'revenue') {
       toast({
-        title: 'Invoice Sent',
-        description: 'Invoice has been sent to the entity via email',
+        title: 'Cannot Suspend',
+        description: `This invoice was created on the ${invoice.source_dashboard} dashboard and can only be suspended there.`,
+        variant: 'destructive'
       });
-    } catch (error) {
+      return;
+    }
+    
+    const result = await suspendInvoice(invoice.id, invoice.source_dashboard);
+    if (result.success) {
+      toast({
+        title: 'Invoice Suspended',
+        description: 'Invoice has been suspended successfully',
+      });
+    } else {
       toast({
         title: 'Error',
-        description: 'Failed to send invoice',
+        description: result.error as string || 'Failed to suspend invoice',
         variant: 'destructive'
       });
     }
@@ -146,6 +154,7 @@ export function InvoiceManagement() {
       case 'sent': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'overdue': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'cancelled': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'suspended': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -162,7 +171,7 @@ export function InvoiceManagement() {
                   <FileText className="w-5 h-5" />
                   Invoice Management
                 </CardTitle>
-                <CardDescription>Create, manage, and track new and unpaid invoices</CardDescription>
+                <CardDescription>View and manage invoices (view only - suspend available for revenue-created invoices)</CardDescription>
               </div>
               <Button onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -242,6 +251,7 @@ export function InvoiceManagement() {
                     <TableRow>
                       <TableHead>Invoice Number</TableHead>
                       <TableHead>Type</TableHead>
+                      <TableHead>Source</TableHead>
                       <TableHead>Entity</TableHead>
                       <TableHead>Reference</TableHead>
                       <TableHead>Amount</TableHead>
@@ -251,62 +261,69 @@ export function InvoiceManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredInvoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={
-                            invoice.invoice_type === 'inspection_fee' 
-                              ? 'border-blue-300 text-blue-700 bg-blue-50'
-                              : 'border-green-300 text-green-700 bg-green-50'
-                          }>
-                            {invoice.invoice_type === 'inspection_fee' ? 'Inspection' : 'Permit Fee'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{invoice.entity?.name || 'N/A'}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {invoice.invoice_type === 'inspection_fee' && invoice.inspection
-                            ? `${invoice.inspection.inspection_type} - ${invoice.inspection.province || 'N/A'}`
-                            : invoice.permit?.title || 'N/A'}
-                        </TableCell>
-                        <TableCell className="font-semibold">K{invoice.amount.toLocaleString()}</TableCell>
-                        <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(invoice.status)}>
-                            {invoice.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button size="sm" variant="ghost">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost">
-                              <Download className="w-4 h-4" />
-                            </Button>
-                            {invoice.status === 'draft' && (
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => handleSendInvoice(invoice.id)}
-                              >
-                                <Send className="w-4 h-4" />
+                    {filteredInvoices.map((invoice) => {
+                      const canSuspend = !invoice.source_dashboard || invoice.source_dashboard === 'revenue';
+                      const isNotSuspended = invoice.status !== 'suspended';
+                      
+                      return (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={
+                              invoice.invoice_type === 'inspection_fee' 
+                                ? 'border-blue-300 text-blue-700 bg-blue-50'
+                                : 'border-green-300 text-green-700 bg-green-50'
+                            }>
+                              {invoice.invoice_type === 'inspection_fee' ? 'Inspection' : 'Permit Fee'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs capitalize">
+                              {invoice.source_dashboard || 'revenue'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{invoice.entity?.name || 'N/A'}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {invoice.invoice_type === 'inspection_fee' && invoice.inspection
+                              ? `${invoice.inspection.inspection_type} - ${invoice.inspection.province || 'N/A'}`
+                              : invoice.permit?.title || 'N/A'}
+                          </TableCell>
+                          <TableCell className="font-semibold">K{invoice.amount.toLocaleString()}</TableCell>
+                          <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(invoice.status)}>
+                              {invoice.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button size="sm" variant="ghost" title="View">
+                                <Eye className="w-4 h-4" />
                               </Button>
-                            )}
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => {
-                                setSelectedInvoice(invoice);
-                                setEditDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              <Button size="sm" variant="ghost" title="Download">
+                                <Download className="w-4 h-4" />
+                              </Button>
+                              {canSuspend && isNotSuspended && (
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                  onClick={() => handleSuspendInvoice(invoice)}
+                                  title="Suspend Invoice"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {!canSuspend && (
+                                <span className="text-xs text-muted-foreground px-2">
+                                  Suspend on {invoice.source_dashboard}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
