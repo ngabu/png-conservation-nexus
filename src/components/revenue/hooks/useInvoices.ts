@@ -18,6 +18,17 @@ export interface Invoice {
   follow_up_date: string | null;
   follow_up_notes: string | null;
   paid_date?: string;
+  invoice_type?: string;
+  inspection_id?: string | null;
+  intent_registration_id?: string | null;
+  document_path?: string | null;
+  // Verification fields
+  verification_status?: string | null;
+  verified_by?: string | null;
+  verified_at?: string | null;
+  verification_notes?: string | null;
+  cepa_receipt_path?: string | null;
+  stripe_receipt_url?: string | null;
   permit?: {
     title: string;
     permit_number: string | null;
@@ -26,6 +37,18 @@ export interface Invoice {
   entity?: {
     name: string;
     entity_type: string;
+  };
+  inspection?: {
+    id: string;
+    inspection_type: string;
+    scheduled_date: string;
+    province: string | null;
+    number_of_days: number;
+  };
+  intent_registration?: {
+    id: string;
+    activity_description: string;
+    status: string;
   };
   assigned_officer?: {
     full_name: string | null;
@@ -40,22 +63,27 @@ export function useInvoices() {
 
   const fetchInvoices = async () => {
     try {
+      // Fetch invoices with related data - using only tables that have FK relationships
       const { data, error } = await supabase
         .from('invoices')
         .select(`
           *,
-          permit_applications (
+          inspections (
             id,
-            title,
-            permit_number,
-            permit_type,
-            entity_name,
-            entity_type
+            inspection_type,
+            scheduled_date,
+            province,
+            number_of_days
           ),
-          profiles!assigned_officer_id (
+          intent_registrations (
             id,
-            full_name,
-            email
+            activity_description,
+            status
+          ),
+          entities (
+            id,
+            name,
+            entity_type
           )
         `)
         .order('created_at', { ascending: false });
@@ -66,28 +94,81 @@ export function useInvoices() {
         setLoading(false);
         return;
       }
+
+      // Fetch permit applications separately for invoices that have permit_id
+      const permitIds = (data || [])
+        .filter(inv => inv.permit_id)
+        .map(inv => inv.permit_id);
       
-      // Transform the data to match the Invoice interface
-      const transformedData = (data || []).map(invoice => ({
-        ...invoice,
-        permit: invoice.permit_applications && typeof invoice.permit_applications === 'object' ? {
-          title: (invoice.permit_applications as any).title,
-          permit_number: (invoice.permit_applications as any).permit_number,
-          permit_type: (invoice.permit_applications as any).permit_type
-        } : undefined,
-        entity: invoice.permit_applications && typeof invoice.permit_applications === 'object' ? {
-          name: (invoice.permit_applications as any).entity_name,
-          entity_type: (invoice.permit_applications as any).entity_type
-        } : undefined,
-        assigned_officer: invoice.profiles && typeof invoice.profiles === 'object' && invoice.profiles !== null ? {
-          full_name: (invoice.profiles as any).full_name,
-          email: (invoice.profiles as any).email
-        } : undefined,
-        payment_status: invoice.status,
-        assigned_officer_id: invoice.user_id,
-        follow_up_date: null,
-        follow_up_notes: null
-      }));
+      let permitsMap: Record<string, any> = {};
+      if (permitIds.length > 0) {
+        const { data: permits } = await supabase
+          .from('permit_applications')
+          .select('id, title, permit_number, permit_type, entity_name, entity_type')
+          .in('id', permitIds);
+        
+        if (permits) {
+          permitsMap = permits.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+        }
+      }
+
+      // Fetch assigned officer profiles separately
+      const officerIds = (data || [])
+        .filter(inv => inv.assigned_officer_id)
+        .map(inv => inv.assigned_officer_id);
+      
+      let officersMap: Record<string, any> = {};
+      if (officerIds.length > 0) {
+        const { data: officers } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', officerIds);
+        
+        if (officers) {
+          officersMap = officers.reduce((acc, o) => ({ ...acc, [o.id]: o }), {});
+        }
+      }
+      
+      // Transform the data to match the Invoice interface using lookup maps
+      const transformedData = (data || []).map(invoice => {
+        const permitData = invoice.permit_id ? permitsMap[invoice.permit_id] : null;
+        const officerData = invoice.assigned_officer_id ? officersMap[invoice.assigned_officer_id] : null;
+        
+        return {
+          ...invoice,
+          permit: permitData ? {
+            title: permitData.title,
+            permit_number: permitData.permit_number,
+            permit_type: permitData.permit_type
+          } : undefined,
+          entity: invoice.entities && typeof invoice.entities === 'object' ? {
+            name: (invoice.entities as any).name,
+            entity_type: (invoice.entities as any).entity_type
+          } : (permitData ? {
+            name: permitData.entity_name,
+            entity_type: permitData.entity_type
+          } : undefined),
+          inspection: invoice.inspections && typeof invoice.inspections === 'object' ? {
+            id: (invoice.inspections as any).id,
+            inspection_type: (invoice.inspections as any).inspection_type,
+            scheduled_date: (invoice.inspections as any).scheduled_date,
+            province: (invoice.inspections as any).province,
+            number_of_days: (invoice.inspections as any).number_of_days
+          } : undefined,
+          intent_registration: invoice.intent_registrations && typeof invoice.intent_registrations === 'object' ? {
+            id: (invoice.intent_registrations as any).id,
+            activity_description: (invoice.intent_registrations as any).activity_description,
+            status: (invoice.intent_registrations as any).status
+          } : undefined,
+          assigned_officer: officerData ? {
+            full_name: `${officerData.first_name || ''} ${officerData.last_name || ''}`.trim() || null,
+            email: officerData.email
+          } : undefined,
+          payment_status: invoice.status,
+          follow_up_date: invoice.follow_up_date,
+          follow_up_notes: invoice.follow_up_notes
+        };
+      });
       
       setInvoices(transformedData);
     } catch (error) {
@@ -168,11 +249,11 @@ export function useInvoices() {
   };
 
   useEffect(() => {
-    if (profile?.operational_unit === 'revenue' || profile?.role === 'admin') {
+    if (profile?.staff_unit === 'revenue' || profile?.user_type === 'admin' || profile?.user_type === 'super_admin') {
       fetchInvoices();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.operational_unit, profile?.role]);
+  }, [profile?.staff_unit, profile?.user_type]);
 
   return { 
     invoices, 

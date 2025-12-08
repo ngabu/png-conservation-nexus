@@ -84,55 +84,32 @@ export function PermitRegistryReviewTab({ applicationId, currentStatus, onStatus
 
     setSubmitting(true);
     try {
-      // Update permit application status
+      // Prepare assessment data to store in permit application
+      const assessmentData = {
+        assessment,
+        remarks,
+        proposed_action: proposedAction,
+        documents: uploadedFiles,
+        validation: {
+          entityIPAValidated,
+          projectSiteMapValidated,
+          documentsComplete,
+          feeCalculated
+        },
+        assessed_by: profile?.user_id,
+        assessed_at: new Date().toISOString()
+      };
+
+      // Update permit application status and store assessment in compliance_checks field
       const { error: appError } = await supabase
         .from('permit_applications')
-        .update({ status })
+        .update({ 
+          status,
+          compliance_checks: assessmentData
+        })
         .eq('id', applicationId);
 
       if (appError) throw appError;
-
-      // Create or update initial assessment
-      const { data: existingAssessment } = await supabase
-        .from('initial_assessments')
-        .select('id')
-        .eq('permit_application_id', applicationId)
-        .maybeSingle();
-
-      const assessmentData = {
-        assessment_notes: JSON.stringify({
-          assessment,
-          remarks,
-          proposed_action: proposedAction,
-          documents: uploadedFiles,
-          validation: {
-            entityIPAValidated,
-            projectSiteMapValidated,
-            documentsComplete,
-            feeCalculated
-          }
-        }),
-        assessment_status: status === 'registry_approved' ? 'completed' : 'pending',
-        assessment_outcome: status,
-        assessed_by: profile?.user_id || '00000000-0000-0000-0000-000000000000',
-      };
-
-      if (existingAssessment) {
-        const { error } = await supabase
-          .from('initial_assessments')
-          .update(assessmentData)
-          .eq('id', existingAssessment.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('initial_assessments')
-          .insert({
-            ...assessmentData,
-            permit_application_id: applicationId,
-            permit_activity_type: 'new_application'
-          });
-        if (error) throw error;
-      }
 
       toast({ title: 'Success', description: 'Registry review submitted successfully' });
       onStatusUpdate();
@@ -146,7 +123,7 @@ export function PermitRegistryReviewTab({ applicationId, currentStatus, onStatus
 
   return (
     <Card>
-      <CardHeader className="bg-primary/5">
+      <CardHeader className="bg-muted/50">
         <CardTitle className="flex items-center gap-2 text-lg">
           <FileText className="w-5 h-5 text-primary" />
           Registry Review & Assessment

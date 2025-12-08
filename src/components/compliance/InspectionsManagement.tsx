@@ -8,25 +8,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useInspections } from '@/hooks/useInspections';
-import { usePermitApplications } from '@/hooks/usePermitApplications';
-import { CalendarIcon, Plus, Search, Filter, MapPin, DollarSign, Calendar as CalendarDays } from 'lucide-react';
+import { useInspectionApplications } from '@/hooks/useInspectionApplications';
+import { CalendarIcon, Plus, Search, Filter, MapPin, Loader2, DollarSign, Calendar as CalendarDays, PauseCircle, Trash2, PlayCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export const InspectionsManagement = () => {
-  const { inspections, loading, createInspection } = useInspections();
-  const { applications } = usePermitApplications();
+  const { inspections, loading, createInspection, suspendInspection, reactivateInspection, deleteInspection } = useInspections();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [provinceFilter, setProvinceFilter] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<'permit' | 'intent' | 'amalgamation' | 'amendment' | 'renewal' | 'surrender' | 'transfer'>('permit');
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<string | null>(null);
+  const [suspendReason, setSuspendReason] = useState('');
 
-  // Filter approved permits only
-  const approvedPermits = useMemo(() => {
-    return applications.filter(app => app.status === 'approved');
-  }, [applications]);
+  // Fetch applications based on selected type
+  const { options: applicationOptions, loading: optionsLoading } = useInspectionApplications(selectedType);
 
   // Filter inspections
   const filteredInspections = useMemo(() => {
@@ -99,11 +103,40 @@ export const InspectionsManagement = () => {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'in-progress': return 'bg-yellow-100 text-yellow-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'suspended': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const totalTravelCost = formData.accommodation_cost + formData.transportation_cost + formData.daily_allowance;
+  const handleSuspend = async () => {
+    if (!selectedInspection) return;
+    await suspendInspection(selectedInspection, suspendReason);
+    setSuspendDialogOpen(false);
+    setSelectedInspection(null);
+    setSuspendReason('');
+  };
+
+  const handleDelete = async () => {
+    if (!selectedInspection) return;
+    await deleteInspection(selectedInspection);
+    setDeleteDialogOpen(false);
+    setSelectedInspection(null);
+  };
+
+  const openSuspendDialog = (id: string) => {
+    setSelectedInspection(id);
+    setSuspendDialogOpen(true);
+  };
+
+  const openDeleteDialog = (id: string) => {
+    setSelectedInspection(id);
+    setDeleteDialogOpen(true);
+  };
+
+  // Calculate total accommodation and daily allowance based on number of days
+  const totalAccommodation = formData.accommodation_cost * formData.number_of_days;
+  const totalDailyAllowance = formData.daily_allowance * formData.number_of_days;
+  const totalInspectionCost = totalAccommodation + formData.transportation_cost + totalDailyAllowance;
 
   if (loading) {
     return <div>Loading inspections...</div>;
@@ -124,7 +157,7 @@ export const InspectionsManagement = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-blue-600">
@@ -151,10 +184,18 @@ export const InspectionsManagement = () => {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-600">
-              {approvedPermits.length}
+            <div className="text-2xl font-bold text-orange-600">
+              {inspections.filter(i => i.status === 'suspended').length}
             </div>
-            <p className="text-sm text-muted-foreground">Active Permits</p>
+            <p className="text-sm text-muted-foreground">Suspended</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-gray-600">
+              {applicationOptions.length}
+            </div>
+            <p className="text-sm text-muted-foreground">Eligible for Inspection</p>
           </CardContent>
         </Card>
       </div>
@@ -169,28 +210,75 @@ export const InspectionsManagement = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Permit *</Label>
+                  <Label>Application Type *</Label>
+                  <Select
+                    value={selectedType}
+                    onValueChange={(value: 'permit' | 'intent' | 'amalgamation' | 'amendment' | 'renewal' | 'surrender' | 'transfer') => {
+                      setSelectedType(value);
+                      setFormData({ ...formData, permit_application_id: '', permit_category: '', province: '' });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="permit">Permit Application</SelectItem>
+                      <SelectItem value="intent">Intent Registration</SelectItem>
+                      <SelectItem value="amalgamation">Permit Amalgamation</SelectItem>
+                      <SelectItem value="amendment">Permit Amendment</SelectItem>
+                      <SelectItem value="renewal">Permit Renewal</SelectItem>
+                      <SelectItem value="surrender">Permit Surrender</SelectItem>
+                      <SelectItem value="transfer">Permit Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{selectedType === 'intent' ? 'Intent' : 'Application'} *</Label>
                   <Select
                     value={formData.permit_application_id}
                     onValueChange={(value) => {
-                  const permit = approvedPermits.find(p => p.id === value);
-                  setFormData({
-                    ...formData,
-                    permit_application_id: value,
-                    permit_category: permit?.permit_type || '',
-                    province: permit?.details?.activity_location || ''
-                  });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select approved permit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {approvedPermits.map((permit) => (
-                    <SelectItem key={permit.id} value={permit.id}>
-                      {permit.permit_number || permit.title} - {permit.entity?.name || 'Unknown Entity'}
-                        </SelectItem>
-                      ))}
+                      const selected = applicationOptions.find(opt => opt.id === value);
+                      const typeLabels: Record<string, string> = {
+                        permit: 'Permit Application',
+                        intent: 'Intent Registration',
+                        amalgamation: 'Permit Amalgamation',
+                        amendment: 'Permit Amendment',
+                        renewal: 'Permit Renewal',
+                        surrender: 'Permit Surrender',
+                        transfer: 'Permit Transfer'
+                      };
+                      setFormData({
+                        ...formData,
+                        permit_application_id: value,
+                        permit_category: typeLabels[selectedType] || '',
+                        province: selected?.province || ''
+                      });
+                    }}
+                    disabled={optionsLoading}
+                  >
+                    <SelectTrigger>
+                      {optionsLoading ? (
+                        <div className="flex items-center">
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Loading...
+                        </div>
+                      ) : (
+                        <SelectValue placeholder={`Select ${selectedType === 'intent' ? 'intent' : 'application'}`} />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {applicationOptions.length === 0 ? (
+                        <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                          No {selectedType === 'intent' ? 'intents' : 'applications'} available
+                        </div>
+                      ) : (
+                        applicationOptions.map((option) => (
+                          <SelectItem key={option.id} value={option.id}>
+                            {option.label} - {option.entityName} ({option.status})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -256,7 +344,7 @@ export const InspectionsManagement = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Accommodation Cost (Kina)</Label>
+                  <Label>Accommodation Costs (Kina) per day</Label>
                   <Input
                     type="number"
                     min="0"
@@ -278,7 +366,7 @@ export const InspectionsManagement = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Daily Allowance (Kina)</Label>
+                  <Label>Daily Allowance (Kina) per day</Label>
                   <Input
                     type="number"
                     min="0"
@@ -289,10 +377,10 @@ export const InspectionsManagement = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Total Travel Cost</Label>
+                  <Label>Total Inspection Cost</Label>
                   <Input
                     type="text"
-                    value={`K ${totalTravelCost.toFixed(2)}`}
+                    value={`K ${totalInspectionCost.toFixed(2)}`}
                     disabled
                     className="bg-muted"
                   />
@@ -313,7 +401,7 @@ export const InspectionsManagement = () => {
                 <Button type="button" variant="destructive" onClick={() => setShowCreateForm(false)} className="w-32">
                   Cancel
                 </Button>
-                <Button type="submit" className="w-48">Schedule Inspection</Button>
+                <Button type="submit" className="w-48">Register Inspection</Button>
               </div>
             </form>
           </CardContent>
@@ -415,6 +503,42 @@ export const InspectionsManagement = () => {
                   <strong>Notes:</strong> {inspection.notes}
                 </div>
               )}
+
+              {/* Action Buttons */}
+              <div className="mt-4 flex justify-end gap-2">
+                {inspection.status !== 'suspended' && inspection.status !== 'completed' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openSuspendDialog(inspection.id)}
+                    className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                  >
+                    <PauseCircle className="h-4 w-4 mr-1" />
+                    Suspend
+                  </Button>
+                )}
+                {inspection.status === 'suspended' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => reactivateInspection(inspection.id)}
+                      className="text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      <PlayCircle className="h-4 w-4 mr-1" />
+                      Reactivate
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => openDeleteDialog(inspection.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -428,6 +552,56 @@ export const InspectionsManagement = () => {
         )}
         </div>
       )}
+
+      {/* Suspend Dialog */}
+      <Dialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Suspend Inspection</DialogTitle>
+            <DialogDescription>
+              This will suspend the scheduled inspection. Suspended inspections can be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Reason for Suspension (Optional)</Label>
+              <Textarea
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                placeholder="Enter reason for suspension..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSuspendDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="default" className="bg-orange-600 hover:bg-orange-700" onClick={handleSuspend}>
+              Suspend Inspection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Inspection</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this suspended inspection? This action cannot be undone.
+              Any associated invoice will also be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

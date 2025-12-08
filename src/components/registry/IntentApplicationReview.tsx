@@ -398,8 +398,8 @@ export function IntentApplicationReview() {
           <IntentRegistrationReadOnlyView intent={selectedIntent} />
 
           {/* Registry Review Section */}
-          <Card className="bg-accent/50 print:hidden">
-            <CardHeader>
+          <Card className="print:hidden">
+            <CardHeader className="bg-muted/50">
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
                 Registry Review & Assessment

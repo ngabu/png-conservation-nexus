@@ -116,7 +116,7 @@ export function IntentRegistryReviewTab({ intentId, currentStatus, onStatusUpdat
 
   return (
     <Card>
-      <CardHeader className="bg-primary/5">
+      <CardHeader className="bg-muted/50">
         <CardTitle className="flex items-center gap-2 text-lg">
           <FileText className="w-5 h-5 text-primary" />
           Registry Review & Assessment
