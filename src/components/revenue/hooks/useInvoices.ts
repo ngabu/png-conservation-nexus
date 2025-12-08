@@ -22,6 +22,7 @@ export interface Invoice {
   inspection_id?: string | null;
   intent_registration_id?: string | null;
   document_path?: string | null;
+  source_dashboard?: string | null;
   // Verification fields
   verification_status?: string | null;
   verified_by?: string | null;
@@ -196,6 +197,32 @@ export function useInvoices() {
     }
   };
 
+  const suspendInvoice = async (invoiceId: string, sourceDashboard?: string) => {
+    // Only allow suspension if the invoice was created on the revenue dashboard
+    if (sourceDashboard && sourceDashboard !== 'revenue') {
+      return { success: false, error: 'Can only suspend invoices created on the revenue dashboard' };
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ 
+          status: 'suspended',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+
+      // Refresh the invoices list
+      fetchInvoices();
+      return { success: true };
+    } catch (error) {
+      console.error('Error suspending invoice:', error);
+      return { success: false, error };
+    }
+  };
+
   const updateInvoicePaymentStatus = async (invoiceId: string, status: string, followUpNotes?: string) => {
     try {
       const updateData: any = {
@@ -261,6 +288,7 @@ export function useInvoices() {
     updateInvoice,
     updateInvoicePaymentStatus, 
     scheduleFollowUp,
+    suspendInvoice,
     refetch: fetchInvoices 
   };
 }
