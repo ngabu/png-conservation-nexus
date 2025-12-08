@@ -139,9 +139,12 @@ export function InvoiceManagement() {
         description: 'Invoice has been suspended successfully',
       });
     } else {
+      const errorMessage = typeof result.error === 'string' 
+        ? result.error 
+        : (result.error as any)?.message || 'Failed to suspend invoice';
       toast({
         title: 'Error',
-        description: result.error as string || 'Failed to suspend invoice',
+        description: errorMessage,
         variant: 'destructive'
       });
     }
