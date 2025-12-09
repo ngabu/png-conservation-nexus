@@ -25,6 +25,7 @@ export interface Inspection {
   province: string | null;
   permit_category: string | null;
   created_by: string | null;
+  report_path?: string | null;
   permit_number?: string;
   permit_title?: string;
   entity_name?: string;
@@ -107,6 +108,7 @@ export function useInspections() {
           province: inspection.province,
           permit_category: inspection.permit_category,
           created_by: inspection.created_by,
+          report_path: inspection.report_path,
           permit_number: inspection.permit_applications?.permit_number || `Intent: ${inspection.intent_registrations?.id?.slice(0, 8)}`,
           permit_title: inspection.permit_applications?.title || inspection.intent_registrations?.activity_description,
           entity_name: permitEntity?.name || intentEntity?.name,
@@ -285,7 +287,7 @@ export function useInspections() {
           inspection_type: inspectionData.inspection_type,
           scheduled_date: inspectionData.scheduled_date,
           inspector_id: inspectionData.inspector_id,
-          status: inspectionData.status || 'scheduled',
+          status: 'pending',
           notes: inspectionData.notes,
           accommodation_cost: inspectionData.accommodation_cost || 0,
           transportation_cost: inspectionData.transportation_cost || 0,

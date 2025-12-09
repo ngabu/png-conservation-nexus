@@ -10,14 +10,17 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useInspections } from '@/hooks/useInspections';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useInspections, Inspection } from '@/hooks/useInspections';
 import { useInspectionApplications } from '@/hooks/useInspectionApplications';
-import { CalendarIcon, Plus, Search, Filter, MapPin, Loader2, DollarSign, Calendar as CalendarDays, PauseCircle, Trash2, PlayCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { CalendarIcon, Plus, Search, Filter, MapPin, Loader2, DollarSign, Calendar as CalendarDays, PauseCircle, Trash2, PlayCircle, Eye, Edit, Upload, FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export const InspectionsManagement = () => {
-  const { inspections, loading, createInspection, suspendInspection, reactivateInspection, deleteInspection } = useInspections();
+  const { inspections, loading, createInspection, updateInspection, suspendInspection, reactivateInspection, deleteInspection, refetch } = useInspections();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +31,13 @@ export const InspectionsManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<string | null>(null);
   const [suspendReason, setSuspendReason] = useState('');
+  
+  // View/Update dialog state
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [currentInspection, setCurrentInspection] = useState<Inspection | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string>('');
+  const [updateFindings, setUpdateFindings] = useState<string>('');
+  const [uploadingReport, setUploadingReport] = useState(false);
 
   // Fetch applications based on selected type
   const { options: applicationOptions, loading: optionsLoading } = useInspectionApplications(selectedType);
@@ -99,6 +109,7 @@ export const InspectionsManagement = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending': return 'bg-gray-100 text-gray-800';
       case 'scheduled': return 'bg-blue-100 text-blue-800';
       case 'completed': return 'bg-green-100 text-green-800';
       case 'in-progress': return 'bg-yellow-100 text-yellow-800';
@@ -133,6 +144,94 @@ export const InspectionsManagement = () => {
     setDeleteDialogOpen(true);
   };
 
+  const openViewDialog = (inspection: Inspection) => {
+    setCurrentInspection(inspection);
+    setUpdateStatus(inspection.status);
+    setUpdateFindings(inspection.findings || '');
+    setViewDialogOpen(true);
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!currentInspection) return;
+    
+    const updates: Partial<Inspection> = {
+      status: updateStatus,
+      findings: updateFindings
+    };
+    
+    // Set completed_date when status changes to completed
+    if (updateStatus === 'completed' && currentInspection.status !== 'completed') {
+      updates.completed_date = new Date().toISOString();
+    }
+    
+    const success = await updateInspection(currentInspection.id, updates);
+    if (success) {
+      setViewDialogOpen(false);
+      setCurrentInspection(null);
+    }
+  };
+
+  const handleReportUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentInspection) return;
+
+    setUploadingReport(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `inspection-reports/${currentInspection.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Update inspection with report path
+      const { error: updateError } = await supabase
+        .from('inspections')
+        .update({ report_path: fileName })
+        .eq('id', currentInspection.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Inspection report uploaded successfully');
+      await refetch();
+      
+      // Update local state
+      setCurrentInspection({
+        ...currentInspection,
+        report_path: fileName
+      });
+    } catch (error) {
+      console.error('Error uploading report:', error);
+      toast.error('Failed to upload inspection report');
+    } finally {
+      setUploadingReport(false);
+    }
+  };
+
+  const handleDownloadReport = async (reportPath: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(reportPath);
+      
+      if (error) throw error;
+      
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = reportPath.split('/').pop() || 'inspection-report';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast.error('Failed to download report');
+    }
+  };
+
   // Calculate total accommodation and daily allowance based on number of days
   const totalAccommodation = formData.accommodation_cost * formData.number_of_days;
   const totalDailyAllowance = formData.daily_allowance * formData.number_of_days;
@@ -157,7 +256,15 @@ export const InspectionsManagement = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-gray-600">
+              {inspections.filter(i => i.status === 'pending').length}
+            </div>
+            <p className="text-sm text-muted-foreground">Pending</p>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-blue-600">
@@ -192,10 +299,10 @@ export const InspectionsManagement = () => {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-gray-600">
+            <div className="text-2xl font-bold text-purple-600">
               {applicationOptions.length}
             </div>
-            <p className="text-sm text-muted-foreground">Eligible for Inspection</p>
+            <p className="text-sm text-muted-foreground">Eligible</p>
           </CardContent>
         </Card>
       </div>
@@ -451,107 +558,253 @@ export const InspectionsManagement = () => {
         </Card>
       )}
 
-      {/* Inspections List */}
+      {/* Inspections Table */}
       {!showCreateForm && (
-        <div className="space-y-4">
-        {filteredInspections.map((inspection) => (
-          <Card key={inspection.id}>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Scheduled Inspections</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Permit/Intent</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Scheduled Date</TableHead>
+                  <TableHead>Province</TableHead>
+                  <TableHead>Cost</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Report</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInspections.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                      No inspections found matching your filters.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredInspections.map((inspection) => (
+                    <TableRow key={inspection.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div className="font-semibold">{inspection.permit_number}</div>
+                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {inspection.permit_title}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{inspection.entity_name || 'N/A'}</TableCell>
+                      <TableCell className="capitalize">{inspection.inspection_type}</TableCell>
+                      <TableCell>{format(new Date(inspection.scheduled_date), 'PP')}</TableCell>
+                      <TableCell>{inspection.province || 'N/A'}</TableCell>
+                      <TableCell>K {inspection.total_travel_cost.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(inspection.status)}>
+                          {inspection.status.replace('-', ' ').toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {inspection.report_path ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownloadReport(inspection.report_path!)}
+                            className="text-blue-600"
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openViewDialog(inspection)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          {inspection.status !== 'suspended' && inspection.status !== 'completed' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openSuspendDialog(inspection.id)}
+                              className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                            >
+                              <PauseCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {inspection.status === 'suspended' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => reactivateInspection(inspection.id)}
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                              >
+                                <PlayCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => openDeleteDialog(inspection.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* View/Update Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Inspection Details</DialogTitle>
+            <DialogDescription>
+              View and update inspection information
+            </DialogDescription>
+          </DialogHeader>
+          
+          {currentInspection && (
+            <div className={`space-y-4 py-4 ${updateStatus === 'completed' ? 'max-h-[60vh] overflow-y-auto pr-2' : ''}`}>
+              {/* Inspection Info */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold">{inspection.inspection_type}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Permit: {inspection.permit_number} | Entity: {inspection.entity_name}
-                  </p>
+                  <Label className="text-muted-foreground">Permit/Intent</Label>
+                  <p className="font-medium">{currentInspection.permit_number}</p>
                 </div>
-                <Badge className={getStatusColor(inspection.status)}>
-                  {inspection.status.replace('-', ' ').toUpperCase()}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="flex items-center text-sm">
-                  <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{format(new Date(inspection.scheduled_date), 'PP')}</span>
+                <div>
+                  <Label className="text-muted-foreground">Entity</Label>
+                  <p className="font-medium">{currentInspection.entity_name || 'N/A'}</p>
                 </div>
-                <div className="flex items-center text-sm">
-                  <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{inspection.province || 'N/A'}</span>
+                <div>
+                  <Label className="text-muted-foreground">Inspection Type</Label>
+                  <p className="font-medium capitalize">{currentInspection.inspection_type}</p>
                 </div>
-                <div className="flex items-center text-sm">
-                  <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>K {inspection.total_travel_cost.toFixed(2)}</span>
+                <div>
+                  <Label className="text-muted-foreground">Scheduled Date</Label>
+                  <p className="font-medium">{format(new Date(currentInspection.scheduled_date), 'PPP')}</p>
                 </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Duration:</span> {inspection.number_of_days} day(s)
+                <div>
+                  <Label className="text-muted-foreground">Province</Label>
+                  <p className="font-medium">{currentInspection.province || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Total Cost</Label>
+                  <p className="font-medium">K {currentInspection.total_travel_cost.toFixed(2)}</p>
                 </div>
               </div>
 
-              {inspection.total_travel_cost > 0 && (
+              {/* Travel Cost Breakdown */}
+              {currentInspection.total_travel_cost > 0 && (
                 <div className="p-3 bg-muted rounded-lg text-sm">
-                  <p className="font-medium mb-1">Travel Costs Breakdown:</p>
+                  <p className="font-medium mb-2">Travel Costs Breakdown:</p>
                   <div className="grid grid-cols-3 gap-2">
-                    <span>Accommodation: K {inspection.accommodation_cost.toFixed(2)}</span>
-                    <span>Transport: K {inspection.transportation_cost.toFixed(2)}</span>
-                    <span>Allowance: K {inspection.daily_allowance.toFixed(2)}</span>
+                    <span>Accommodation: K {currentInspection.accommodation_cost.toFixed(2)}</span>
+                    <span>Transport: K {currentInspection.transportation_cost.toFixed(2)}</span>
+                    <span>Allowance: K {currentInspection.daily_allowance.toFixed(2)}</span>
                   </div>
                 </div>
               )}
 
-              {inspection.notes && (
-                <div className="mt-3 text-sm text-muted-foreground">
-                  <strong>Notes:</strong> {inspection.notes}
+              {/* Notes */}
+              {currentInspection.notes && (
+                <div>
+                  <Label className="text-muted-foreground">Notes</Label>
+                  <p className="text-sm">{currentInspection.notes}</p>
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="mt-4 flex justify-end gap-2">
-                {inspection.status !== 'suspended' && inspection.status !== 'completed' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openSuspendDialog(inspection.id)}
-                    className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                  >
-                    <PauseCircle className="h-4 w-4 mr-1" />
-                    Suspend
-                  </Button>
-                )}
-                {inspection.status === 'suspended' && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => reactivateInspection(inspection.id)}
-                      className="text-green-600 border-green-600 hover:bg-green-50"
-                    >
-                      <PlayCircle className="h-4 w-4 mr-1" />
-                      Reactivate
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => openDeleteDialog(inspection.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  </>
-                )}
+              {/* Status Update */}
+              <div className="space-y-2">
+                <Label>Status *</Label>
+                <Select value={updateStatus} onValueChange={setUpdateStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
-        ))}
 
-        {filteredInspections.length === 0 && (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              No inspections found matching your filters.
-            </CardContent>
-          </Card>
-        )}
-        </div>
-      )}
+              {/* Findings */}
+              <div className="space-y-2">
+                <Label>Findings</Label>
+                <Textarea
+                  value={updateFindings}
+                  onChange={(e) => setUpdateFindings(e.target.value)}
+                  placeholder="Enter inspection findings..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Report Upload - Only show when completed */}
+              {updateStatus === 'completed' && (
+                <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+                  <Label>Inspection Report</Label>
+                  {currentInspection.report_path ? (
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-green-600" />
+                      <span className="text-sm">Report uploaded</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadReport(currentInspection.report_path!)}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleReportUpload}
+                        disabled={uploadingReport}
+                        className="max-w-sm"
+                      />
+                      {uploadingReport && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Upload the completed inspection report (PDF, DOC, DOCX)
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleStatusUpdate}>
+              Update Inspection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Suspend Dialog */}
       <Dialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
